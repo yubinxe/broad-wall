@@ -71,7 +71,9 @@ function route() {
   $("#nav").classList.remove("open");
   document.body.dataset.route = ROUTES[name] ? name : "";
   const draw = () => { main.innerHTML = ""; fn(main, arg); edit(main, name); scrollTo({ top: 0 }); document.title = (fn.title || "1면") + " — BROAD & WALL"; };
-  document.startViewTransition ? document.startViewTransition(draw) : draw();
+  // 첫 화면은 전환 효과 없이 바로 그린다(Safari 초기 렌더 보호). 이후에도 전환 실패 시 즉시 그린다.
+  if (!route.done || !document.startViewTransition) { draw(); route.done = true; return; }
+  try { const vt = document.startViewTransition(draw); vt.finished?.catch(() => {}); vt.ready?.catch(() => {}); } catch { draw(); }
 }
 
 
@@ -83,8 +85,12 @@ new MutationObserver(() => $$(".scroll:not([tabindex])").forEach((e) => { e.tabI
 
 // ── 부팅 ──
 (async () => {
-  shell();
-  try { setMarket(await (await fetch("data/market.json")).json()); }
-  catch (e) { $("#main").innerHTML = `<div class="wrap page"><p class="note warn">시장 데이터를 불러오지 못했습니다: ${esc(e.message)}</p></div>`; return; }
-  tape(); addEventListener("hashchange", route); addEventListener("vault:lock", () => { if (location.hash.startsWith("#/portfolio")) route(); }); route();
+  try {
+    document.getElementById("boot")?.remove(); shell();
+    try { const r = await fetch("data/market.json", { cache: "no-cache" }); if (!r.ok) throw new Error("HTTP " + r.status); setMarket(await r.json()); }
+    catch (e) { $("#main").innerHTML = `<div class="wrap page"><p class="note warn">시장 데이터를 불러오지 못했습니다: ${esc(e.message)}</p></div>`; window.__booted = true; return; }
+    try { tape(); } catch (e) { console.error(e); }
+    addEventListener("hashchange", route); addEventListener("vault:lock", () => { if (location.hash.startsWith("#/portfolio")) route(); }); route();
+    window.__booted = true;
+  } catch (e) { console.error(e); document.body.insertAdjacentHTML("beforeend", '<div id="boot" class="boot"></div>'); window.__bootErr?.((e && e.stack) || e); }
 })();
