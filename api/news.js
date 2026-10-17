@@ -13,6 +13,8 @@ export const FEEDS = {
     { src: "CNBC", url: "https://www.cnbc.com/id/10000664/device/rss/rss.html" },
   ],
 };
+// 투자 판단과 무관한 단신(부고·인사·게시판·포토 등)은 뺀다
+const NOISE = /^\s*[\[〈<(]\s*(부고|인사|게시판|포토|사진|화보|알림|사고|정정|반론|운세|날씨|부음)/;
 const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 const clean = (s = "") => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "").replace(/&(#x?[0-9a-f]+|\w+);/gi, (m, e) => (e[0] === "#" ? String.fromCodePoint(e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : +e.slice(1)) : ENT[e.toLowerCase()] ?? m)).replace(/\s+/g, " ").trim();
 const tag = (x, t) => clean((x.match(new RegExp(`<${t}[^>]*>([\\s\\S]*?)</${t}>`, "i")) || [])[1]);
@@ -20,7 +22,7 @@ export function parseRSS(xml, src) {
   return (xml.match(/<item[\s>][\s\S]*?<\/item>/gi) || []).map((x) => {
     const link = tag(x, "link") || (x.match(/<link[^>]*href="([^"]+)"/i) || [])[1] || "", t = Date.parse(tag(x, "pubDate") || tag(x, "dc:date"));
     return { src, title: tag(x, "title"), link, t: isFinite(t) ? t : null };
-  }).filter((a) => a.title && /^https?:\/\//.test(a.link));
+  }).filter((a) => a.title && /^https?:\/\//.test(a.link) && !NOISE.test(a.title));
 }
 export async function collect(fetchFn = fetch, now = Date.now(), maxAge = 3 * 864e5) {
   const out = { kr: [], us: [], failed: [] };
