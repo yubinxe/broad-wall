@@ -85,14 +85,16 @@ test("KIS 요청 규격(공식 예제 대조): tokenP → inquire-balance TTTC84
   B._reset(); await B.kisHoldings({ ...env, KIS_ENV: "mock" }, fake); assert.equal(calls[3].init.headers.tr_id, "VTTC8434R"); assert.match(calls[2].url, /openapivts/);
   await assert.rejects(B.kisHoldings({ ...env, KIS_ACCOUNT: "123" }, fake), /형식/);
 });
-test("토스증권 요청 규격(2차 자료 기준): form 토큰, 계좌 헤더, 403은 IP 안내", async () => {
+test("토스증권 요청 규격(공식 OpenAPI 예시 응답): form 토큰 → accountSeq 헤더 → result.items", async () => {
   B._reset(); const calls = [];
-  const fake = async (url, init = {}) => { calls.push({ url, init }); if (url.endsWith("/oauth2/token")) return { ok: true, json: async () => ({ access_token: "T", expires_in: 86400 }) }; if (url.endsWith("/accounts")) return { ok: true, json: async () => ({ result: [{ accountId: 7 }] }) }; return { ok: true, json: async () => ({ result: [{ symbol: "AAPL", name: "Apple", quantity: 2, averagePrice: 150, currentPrice: 250, currency: "USD" }] }) }; };
+  const item = { symbol: "005930", name: "삼성전자", marketCountry: "KR", currency: "KRW", quantity: "100", lastPrice: "72000", averagePurchasePrice: "65000", marketValue: { purchaseAmount: "6500000", amount: "7200000" } };
+  const fake = async (url, init = {}) => { calls.push({ url, init }); if (url.endsWith("/oauth2/token")) return { ok: true, json: async () => ({ access_token: "T", token_type: "Bearer", expires_in: 86400 }) }; if (url.endsWith("/accounts")) return { ok: true, json: async () => ({ result: [{ accountNo: "12345678901", accountSeq: 1, accountType: "BROKERAGE" }] }) }; return { ok: true, json: async () => ({ result: { totalPurchaseAmount: {}, items: [item, { ...item, symbol: "AAPL", name: "Apple", marketCountry: "US", currency: "USD", quantity: "2", lastPrice: "250.5", averagePurchasePrice: "150" }] } }) }; };
   const h = await B.tossHoldings({ TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s" }, fake);
-  assert.deepEqual(h, [{ code: "AAPL", name: "Apple", qty: 2, avg: 150, price: 250, ccy: "USD", cls: "EQ" }]);
-  assert.equal(calls[0].init.headers["content-type"], "application/x-www-form-urlencoded");
-  assert.equal(calls[2].init.headers["X-Tossinvest-Account"], "7");
-  B._reset(); await assert.rejects(B.tossHoldings({ TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s" }, async () => ({ ok: false, status: 403, json: async () => ({}) })), /IP/);
+  assert.deepEqual(h, [{ code: "005930", name: "삼성전자", qty: 100, avg: 65000, price: 72000, ccy: "KRW", cls: "EQ", market: "KR" }, { code: "AAPL", name: "Apple", qty: 2, avg: 150, price: 250.5, ccy: "USD", cls: "EQ", market: "US" }]);
+  assert.equal(calls[0].init.headers["content-type"], "application/x-www-form-urlencoded"); assert.equal(calls[0].init.body.get("grant_type"), "client_credentials");
+  assert.equal(calls[2].init.headers["X-Tossinvest-Account"], "1"); assert.equal(calls[2].init.headers.authorization, "Bearer T");
+  await B.tossHoldings({ TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s", TOSS_ACCOUNT_SEQ: "3" }, fake); assert.equal(calls.length, 4, "토큰 재사용·계좌 조회 생략"); assert.equal(calls[3].init.headers["X-Tossinvest-Account"], "3");
+  B._reset(); await assert.rejects(B.tossHoldings({ TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s" }, async () => ({ ok: false, status: 401, json: async () => ({ error: "invalid_client" }) })), /invalid_client/);
 });
 
 test("투자 데스크: 체온계·신호 변경·리밸런싱 계산", async () => {

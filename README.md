@@ -35,7 +35,7 @@ Vercel `invest-helper` 프로젝트에 이 폴더를 그대로 배포(`vercel de
 |---|---|
 | `MERIDIAN_ADMIN_TOKEN` | 보유 조회 함수 보호(16자 이상) |
 | `KIS_APP_KEY` `KIS_APP_SECRET` `KIS_ACCOUNT`(8-2) `KIS_ENV`(real/mock) | 한국투자증권 국내주식 잔고 |
-| `TOSS_CLIENT_ID` `TOSS_CLIENT_SECRET` (`TOSS_ACCOUNT_ID`) | 토스증권 — 호출 IP 등록 필요 |
+| `TOSS_CLIENT_ID` `TOSS_CLIENT_SECRET` (`TOSS_ACCOUNT_SEQ`) | 토스증권 — 공식 OpenAPI 대조, accountSeq 생략 시 종합매매 계좌 자동 선택 |
 
 ## 데이터 마이그레이션(클래식 → v2)
 1. `/#/migrate` 스캔 — 새 키(`meridian.v2.*`) 외 localStorage 항목 나열

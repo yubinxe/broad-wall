@@ -6,4 +6,6 @@
 - 구조: 1면 js/screens/home.js · 투자 데스크 js/screens/desk.js + 계산 js/desk.js · 섹션 문구 js/app.js COPY · 지면 CSS css/news.css(meridian.css 위에 덮음).
 - /classic/ = 이전 v1 배포 주소로 리다이렉트(원본 파일은 저장소에 없음).
 - 호환 유지: MERIDIAN_ADMIN_TOKEN, localStorage meridian.v2.*.
-- 미해결: 토스 API 미검증·IP 등록 필요, 시세 월간·지연, 실계좌 연결 없음.
+- 토스: 공식 OpenAPI(openapi.tossinvest.com/openapi-docs/latest/openapi.json) 대조 완료. 실계좌 = 사용자가 Vercel env 에 TOSS_CLIENT_ID/SECRET·MERIDIAN_ADMIN_TOKEN 등록해야 동작.
+- 빈 화면(Safari) 원인: 첫 화면 View Transition 정지 → 첫 렌더는 전환 없이 그림 + js/boot.js 오류 표시.
+- 미해결: 시세 월간·지연.
