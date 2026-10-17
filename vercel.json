@@ -48,8 +48,13 @@
       "permanent": false
     },
     {
-      "source": "/classic/:path*",
-      "destination": "https://invest-helper-gt4i3j1ra-yubin-ki-m-s-projects.vercel.app/:path*",
+      "source": "/classic/",
+      "destination": "https://invest-helper-gt4i3j1ra-yubin-ki-m-s-projects.vercel.app/",
+      "permanent": false
+    },
+    {
+      "source": "/classic/:path+",
+      "destination": "https://invest-helper-gt4i3j1ra-yubin-ki-m-s-projects.vercel.app/:path+",
       "permanent": false
     }
   ],
