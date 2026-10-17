@@ -1,5 +1,5 @@
 # 작업 메모 (다음 세션용)
-- 저장소: github.com/yubinxe/broad-wall (main) · 운영: https://invest-helper-five.vercel.app · Vercel prj_tp0gQZuKSMw8molSpRQToxb0o5pv
+- 저장소: github.com/yubinxe/broad-wall (main) · 운영: https://broad-wall.vercel.app (구 invest-helper-five.vercel.app 도 유지) · Vercel 프로젝트 broad-wall (prj_tp0gQZuKSMw8molSpRQToxb0o5pv) — GitHub main push 시 자동 배포
 - **Vercel 첫 배포 원칙: Deployment Protection(Vercel Authentication/SSO) 끄기.** 켜 두면 CSP(script-src 'self')와 겹쳐 흰 화면.
 - 배포: git push → (연결 시) 자동 / 아니면 MCP create_deployment gitSource {github, yubinxe/broad-wall, main} → target production.
 - 빌드: vercel.json buildCommand `mkdir -p data && node scripts/build-data.mjs` (공개 원천 4종 수집, 실패 시 빌드 실패 → 기존 운영 유지).
