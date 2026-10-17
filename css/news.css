@@ -104,3 +104,20 @@ table.rbt tfoot td:last-child { text-align: right; }
   table.rbt tfoot tr { display: flex; justify-content: space-between; padding: 8px; }
   table.rbt td[data-l="주문"] { grid-column: 1 / -1; font-size: 15px; }
 }
+
+/* v7 — 1면 브리핑(지금 확인 · 한국 경제 · 뉴욕 증시) */
+.brief { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.25fr); border-bottom: 3px double var(--ink); margin-top: 0; }
+.bf-col { padding: 14px 18px 16px; border-right: 1px solid var(--rule); min-width: 0; }
+.bf-col:first-child { padding-left: 0; } .bf-col:last-child { border-right: 0; padding-right: 0; }
+.bf-col h4 { font: 900 15px/1.3 var(--kr); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.bf-col h4 small { font: 500 11px var(--sans); color: var(--ink-3); }
+.bf-r { background: none; border: 1px solid var(--rule); color: var(--ink); cursor: pointer; font: 14px/1 var(--sans); padding: 3px 7px; }
+ol.hl { list-style: none; margin: 0; padding: 0; counter-reset: hl; }
+ol.hl li { padding: 8px 0; border-bottom: 1px solid var(--rule-2); font: 500 14px/1.5 var(--kr); word-break: keep-all; }
+ol.hl li:first-child { font-size: 16px; font-weight: 700; }
+ol.hl a { text-decoration: none; color: var(--ink); } ol.hl a:hover { text-decoration: underline; }
+ol.hl small { display: block; font: 500 11px var(--sans); color: var(--ink-3); margin-top: 2px; }
+.mkt.wl { margin-top: 10px; } .mkt .x { background: none; border: 0; color: var(--ink-3); cursor: pointer; padding: 0 6px 0 0; font-size: 14px; }
+.bf-add { display: flex; gap: 6px; margin-top: 8px; } .bf-add input { flex: 1; min-width: 0; font: 500 13px var(--mono); padding: 7px 9px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
+@media (max-width: 980px) { .brief { grid-template-columns: 1fr 1fr; } .bf-now { grid-column: 1 / -1; border-right: 0; padding-right: 0; border-bottom: 1px solid var(--rule); } .bf-col:nth-child(2) { padding-left: 0; } }
+@media (max-width: 640px) { .brief { grid-template-columns: 1fr; } .bf-col { padding: 14px 0; border-right: 0; border-bottom: 1px solid var(--rule); } }

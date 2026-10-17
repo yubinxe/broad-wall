@@ -43,15 +43,28 @@ export async function kisHoldings(env, fetchFn = fetch) {
 }
 
 let tossToken = null;
-export async function tossHoldings(env, fetchFn = fetch) {
-  const base = "https://openapi.tossinvest.com";
-  if (!tossToken || tossToken.exp < Date.now() + 60_000) { // client 당 유효 토큰 1개 — 만료 전에는 재발급하지 않는다
+const TOSS = "https://openapi.tossinvest.com";
+// client 당 유효 토큰 1개 — 만료 전에는 재발급하지 않는다(재발급 시 이전 토큰 즉시 무효)
+export async function tossAuth(env, fetchFn = fetch) {
+  if (!tossToken || tossToken.exp < Date.now() + 60_000) {
     const body = new URLSearchParams({ grant_type: "client_credentials", client_id: env.TOSS_CLIENT_ID, client_secret: env.TOSS_CLIENT_SECRET });
-    const r = await fetchFn(`${base}/oauth2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
+    const r = await fetchFn(`${TOSS}/oauth2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
     const j = await r.json().catch(() => ({})); if (!r.ok || !j.access_token) throw new Error(`토스증권 토큰 발급 실패 (${r.status} ${j.error || ""})`.trim());
     tossToken = { value: j.access_token, exp: Date.now() + (Number(j.expires_in) || 3600) * 1000 };
   }
-  const auth = { authorization: `Bearer ${tossToken.value}` };
+  return { authorization: `Bearer ${tossToken.value}` };
+}
+// 현재가(종목 최대 200, 지표는 카탈로그 심볼만) — GET /api/v1/prices · /api/v1/market-indicators/prices
+export async function tossPrices(env, symbols, { indicators = false } = {}, fetchFn = fetch) {
+  if (!symbols.length) return [];
+  const auth = await tossAuth(env, fetchFn), path = indicators ? "/api/v1/market-indicators/prices" : "/api/v1/prices";
+  const r = await fetchFn(`${TOSS}${path}?symbols=${encodeURIComponent(symbols.join(","))}`, { headers: auth });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(`토스증권 시세 실패: ${r.status}`);
+  return (j.result || []).map((o) => ({ symbol: o.symbol, price: num(o.lastPrice), currency: o.currency || null, at: o.timestamp || null }));
+}
+export async function tossHoldings(env, fetchFn = fetch) {
+  const base = TOSS;
+  const auth = await tossAuth(env, fetchFn);
   let seq = env.TOSS_ACCOUNT_SEQ || env.TOSS_ACCOUNT_ID;
   if (!seq) {
     const r = await fetchFn(`${base}/api/v1/accounts`, { headers: auth }); const j = await r.json().catch(() => ({}));

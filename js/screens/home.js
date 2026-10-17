@@ -6,6 +6,7 @@ import * as R from "../profile.js";
 import * as V from "../vault.js";
 import { skyline } from "../art.js";
 import { thermometer } from "../desk.js";
+import { brief } from "../brief.js";
 
 // ── 1면 (로비) — 신문 1면 문법: 제호 · 날짜선 · 머리기사 · 사진 · 3단 본문 · 우측 단신 · 차례 ──
 export function lobby(el) {
@@ -16,6 +17,7 @@ export function lobby(el) {
   const ch = (a) => D.px[a][t] / D.px[a][t - 1] - 1, cls = (x) => (x >= 0 ? "pos" : "neg"), th = thermometer(D, market);
   el.innerHTML = `<div class="wrap front">
   <div class="dateline"><span>제1권 · 제${D.end.replace("-", "")}호</span><span>뉴욕 · 서울 &nbsp;|&nbsp; ${today}</span><span>월간판 · ${D.end} 자료 기준</span></div>
+  <section class="brief" id="brief" aria-label="오늘의 브리핑"></section>
   <div class="fp"><article class="lead">
     <p class="kicker">머리기사 · 퀀트 데스크</p>
     <h1 class="hed">${span}년의 시장이 남긴 교훈,<br>규칙은 감정보다 오래 살아남는다</h1>
@@ -54,6 +56,7 @@ export function lobby(el) {
   <h2 class="idx-h">이번 호 차례</h2>
   <nav class="index" aria-label="섹션 차례">${[["profile", "A", "투자성향", "여덟 개의 질문으로 감내할 낙폭을 정한다"], ["strategies", "B", "전략 편람", "여섯 개 규칙의 성적과 적합 여부"], ["backtest", "C", "검증 보고서", "학습 · 검증 · 시험 구간을 나눠 본 결과"], ["models", "D", "예측 실험실", "다섯 모델과 기준선의 정직한 비교"], ["scenario", "E", "위기의 기록", "오일쇼크부터 금리 급등까지 대입"], ["portfolio", "F", "비공개 원장", "이 기기에서만 열리는 내 포트폴리오"]].map(([h, s, t2, d]) => `<a href="#/${h}"><span class="sl">${s}</span><b>${t2}${done[h] ? ' <i class="pos">✓</i>' : ""}</b><span>${d}</span></a>`).join("")}</nav>
   </div>`;
+  brief(el.querySelector("#brief"));
 }
 lobby.title = "1면";
 

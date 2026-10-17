@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)", "Bash(npm run *)", "Bash(node *)", "Bash(git status*)", "Bash(git diff*)", "Bash(git log*)", "Bash(git add *)", "Bash(git commit *)", "Bash(git push origin main*)", "Bash(git push -u origin main*)",
+      "mcp__Vercel__list_deployments", "mcp__Vercel__get_deployment", "mcp__Vercel__list_deployment_files", "mcp__Vercel__get_project", "mcp__Vercel__create_deployment",
+      "mcp__Vercel__create_sandboxes_v4", "mcp__Vercel__run_session_command", "mcp__Vercel__get_session_command_logs", "mcp__Vercel__stop_session"
+    ]
+  }
+}

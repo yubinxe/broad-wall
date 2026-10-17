@@ -110,3 +110,20 @@ test("투자 데스크: 체온계·신호 변경·리밸런싱 계산", async ()
   assert.equal(r.total, 1000); assert.ok(Math.abs(r.rows[0].diff + 100) < 1e-9 && Math.abs(r.rows[1].diff - 100) < 1e-9);
   assert.ok(Math.abs(r.fee - 0.2) < 1e-9 && r.needed && Math.abs(r.turnover - 0.1) < 1e-9);
 });
+
+test("뉴스: RSS 파싱(CDATA·엔티티)·3일 초과 제외·중복 제거·실패 출처 표시", async () => {
+  const N = await import("../api/news.js"), now = Date.parse("2026-10-17T06:00:00Z");
+  const xml = `<rss><channel><item><title><![CDATA[코스피 &amp; 환율]]></title><link>https://a.kr/1</link><pubDate>Sat, 17 Oct 2026 13:48:39 +0900</pubDate></item><item><title>옛 기사</title><link>https://a.kr/2</link><pubDate>Mon, 27 Jan 2025 14:27:15 -0500</pubDate></item><item><title>링크 없음</title><pubDate>Sat, 17 Oct 2026 10:00:00 +0900</pubDate></item></channel></rss>`;
+  assert.deepEqual(N.parseRSS(xml, "X")[0], { src: "X", title: "코스피 & 환율", link: "https://a.kr/1", t: Date.parse("2026-10-17T04:48:39Z") });
+  const d = await N.collect(async (u) => (u.includes("ft.com") ? { ok: false, status: 403 } : { ok: true, text: async () => xml }), now);
+  assert.equal(d.kr.length, 1, "중복·오래된 기사 제외"); assert.equal(d.kr[0].title, "코스피 & 환율");
+  assert.ok(d.failed.some((f) => f.startsWith("Financial Times")));
+});
+test("토스증권 현재가: /api/v1/prices · 지표는 market-indicators 경로", async () => {
+  B._reset(); const calls = [];
+  const fake = async (url, init = {}) => { calls.push(url); if (url.endsWith("/oauth2/token")) return { ok: true, json: async () => ({ access_token: "T", expires_in: 86400 }) }; return { ok: true, json: async () => ({ result: [{ symbol: url.includes("indicators") ? "KOSPI" : "005930", timestamp: "2026-03-25T09:30:00.123+09:00", lastPrice: "72000", currency: "KRW" }] }) }; };
+  const env = { TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s" };
+  assert.deepEqual(await B.tossPrices(env, ["005930"], {}, fake), [{ symbol: "005930", price: 72000, currency: "KRW", at: "2026-03-25T09:30:00.123+09:00" }]);
+  await B.tossPrices(env, ["KOSPI", "KOSDAQ"], { indicators: true }, fake);
+  assert.match(calls[1], /\/api\/v1\/prices\?symbols=005930$/); assert.match(calls[2], /\/api\/v1\/market-indicators\/prices\?symbols=KOSPI%2CKOSDAQ$/); assert.equal(calls.length, 3, "토큰 1회");
+});

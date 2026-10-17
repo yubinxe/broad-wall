@@ -30,7 +30,7 @@ function shell() {
     <a class="np" href="#/" aria-label="BROAD &amp; WALL 1면">Broad &amp; Wall</a>
     <span class="ear r"><span class="ear-t">퀀트 리서치 데스크<br><i>월간판 · 투자 권유 아님</i></span><button class="menu-btn" aria-expanded="false" aria-controls="nav">섹션</button><button class="theme-btn" id="themeBtn" aria-label="밝기 전환">◐</button></span>
   </div>
-    <nav class="main" id="nav" aria-label="섹션">${NAV.map(([h, t, rn]) => `<a href="#/${h}" data-r="${h}" class="${h === "portfolio" ? "lock" : ""}">${rn ? `<em>${rn}</em>` : ""}${t}</a>`).join("")}<a href="/classic/" title="이전 버전(보존)">지난 판</a></nav>
+    <nav class="main" id="nav" aria-label="섹션">${NAV.map(([h, t, rn]) => `<a href="#/${h}" data-r="${h}" class="${h === "portfolio" ? "lock" : ""}">${rn ? `<em>${rn}</em>` : ""}${t}</a>`).join("")}<a href="/classic/" title="이전 버전(보존)">구 버전</a></nav>
   </header>
   <main id="main" tabindex="-1"></main>
   <footer class="colophon"><div class="wrap">
