@@ -48,7 +48,7 @@ export function lobby(el) {
     </tbody></table>
     <div class="deskbox"><h4>투자 데스크 <small>이번 달 점검</small></h4>
     <ul><li>S&amp;P 500 고점 대비 <b>${th.now.dd > -0.0005 ? "최고치" : C.pct(th.now.dd)}</b></li><li>주식 추세 <b class="${cls(th.now.trendEQ)}">${th.now.trendEQ >= 0 ? "10개월선 위" : "10개월선 아래"}</b></li><li>실질금리 <b>${C.pct(th.now.real, 2)}</b></li><li>12개월 수익 1위 <b>${Q.ASSET_LABEL[th.rank[0]]}</b></li></ul>
-    <a class="btn sm" href="#/desk">리밸런싱 주문서 열기 →</a></div>
+    <a class="btn sm" href="#/desk">리밸런싱 주문서 열기 →</a> <a class="btn sm ghost" href="#/flows" style="margin-top:6px">돈의 흐름 →</a> <a class="btn sm ghost" href="#/risk" style="margin-top:6px">리스크 상황실 →</a></div>
     <h4 style="margin-top:26px">공개면 안내</h4>
     <p class="brief"><a href="#/public">모델 포트폴리오 증서</a> — 금액 없이 비중과 규칙만 공개한다. 실제 자산과는 분리돼 있다.</p>
     <p class="brief"><a href="#/connect">증권사 연결 현황</a> — 확인된 범위만 쓴다. 연결되지 않은 계좌는 연결됐다고 쓰지 않는다.</p>

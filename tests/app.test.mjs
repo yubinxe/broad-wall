@@ -127,3 +127,16 @@ test("토스증권 현재가: /api/v1/prices · 지표는 market-indicators 경�
   await B.tossPrices(env, ["KOSPI", "KOSDAQ"], { indicators: true }, fake);
   assert.match(calls[1], /\/api\/v1\/prices\?symbols=005930$/); assert.match(calls[2], /\/api\/v1\/market-indicators\/prices\?symbols=KOSPI%2CKOSDAQ$/); assert.equal(calls.length, 3, "토큰 1회");
 });
+
+test("리스크 상황실: 사례 반응·요약·시나리오 계산", async () => {
+  const K = await import("../js/risk.js"), Q = await import("../js/quant.js");
+  const D = Q.prepare(JSON.parse(readFileSync(new URL("../data/market.json", import.meta.url))));
+  const rows = K.EVENTS.map((e) => K.reaction(D, e)).filter(Boolean);
+  assert.equal(rows.length, K.EVENTS.length, "모든 사건이 자료 범위 안");
+  const g = rows.find((r) => r.id === "gfc08"); assert.ok(g.during.EQ < -0.2, "리먼 기간 주식 큰 하락");
+  const i0 = D.dates.indexOf("2008-09"), i1 = D.dates.indexOf("2009-02"); let c = 1; for (let k = i0; k <= i1; k++) c *= 1 + D.R.EQ[k]; assert.ok(Math.abs(g.during.EQ - (c - 1)) < 1e-12);
+  const s = K.summary(rows), sc = K.scenarios(s, { EQ: 0.6, BD: 0.4, GD: 0 });
+  assert.ok(s.during.EQ.worst <= s.during.EQ.med && s.during.EQ.med <= s.during.EQ.best);
+  assert.ok(sc[2].ret <= sc[1].ret && sc[1].ret <= sc[0].ret);
+  assert.ok(Math.abs(sc[1].ret - (0.6 * s.during.EQ.med + 0.4 * s.during.BD.med)) < 1e-12);
+});

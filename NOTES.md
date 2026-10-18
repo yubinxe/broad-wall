@@ -8,4 +8,5 @@
 - 호환 유지: MERIDIAN_ADMIN_TOKEN, localStorage meridian.v2.*.
 - 토스: 공식 OpenAPI(openapi.tossinvest.com/openapi-docs/latest/openapi.json) 대조 완료. 실계좌 = 사용자가 Vercel env 에 TOSS_CLIENT_ID/SECRET·MERIDIAN_ADMIN_TOKEN 등록해야 동작.
 - 빈 화면(Safari) 원인: 첫 화면 View Transition 정지 → 첫 렌더는 전환 없이 그림 + js/boot.js 오류 표시.
-- 미해결: 시세 월간·지연.
+- 섹션: 돈의 흐름(#/flows, 보고서 수치 미검증 → 링크만), 리스크 상황실(#/risk, js/risk.js 사건 17건 · 사건 기간/이후 6·12개월 반응 · 3갈래 시나리오), 뉴스 api/news?topic=world.
+- 미해결: 시세 월간·지연(토스 키 등록 시 현재가).

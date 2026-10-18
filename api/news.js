@@ -12,6 +12,12 @@ export const FEEDS = {
     { src: "Financial Times", url: "https://www.ft.com/markets?format=rss" },
     { src: "CNBC", url: "https://www.cnbc.com/id/10000664/device/rss/rss.html" },
   ],
+  world: [
+    { src: "BBC", url: "https://feeds.bbci.co.uk/news/world/rss.xml" },
+    { src: "CNBC", url: "https://www.cnbc.com/id/100727362/device/rss/rss.html" },
+    { src: "연합뉴스", url: "https://www.yna.co.kr/rss/international.xml" },
+    { src: "Financial Times", url: "https://www.ft.com/world?format=rss" },
+  ],
 };
 // 투자 판단과 무관한 단신(부고·인사·게시판·포토 등)은 뺀다
 const NOISE = /^\s*[\[〈<(]\s*(부고|인사|게시판|포토|사진|화보|알림|사고|정정|반론|운세|날씨|부음)/;
@@ -24,20 +30,20 @@ export function parseRSS(xml, src) {
     return { src, title: tag(x, "title"), link, t: isFinite(t) ? t : null };
   }).filter((a) => a.title && /^https?:\/\//.test(a.link) && !NOISE.test(a.title));
 }
-export async function collect(fetchFn = fetch, now = Date.now(), maxAge = 3 * 864e5) {
-  const out = { kr: [], us: [], failed: [] };
-  await Promise.all(Object.entries(FEEDS).flatMap(([k, list]) => list.map(async (f) => {
+export async function collect(fetchFn = fetch, now = Date.now(), maxAge = 3 * 864e5, keys = ["kr", "us"]) {
+  const out = Object.fromEntries([...keys.map((k) => [k, []]), ["failed", []]]);
+  await Promise.all(Object.entries(FEEDS).filter(([k]) => keys.includes(k)).flatMap(([k, list]) => list.map(async (f) => {
     try {
       const r = await fetchFn(f.url, { headers: { "user-agent": "Mozilla/5.0 (compatible; BroadWallReader/1.0)" }, signal: AbortSignal.timeout(6000) });
       if (!r.ok) throw new Error(r.status);
       out[k].push(...parseRSS(await r.text(), f.src).filter((a) => a.t && now - a.t < maxAge && a.t - now < 36e5));
     } catch (e) { out.failed.push(`${f.src}(${e.message || e})`); }
   })));
-  for (const k of ["kr", "us"]) { const seen = new Set(); out[k] = out[k].sort((a, b) => b.t - a.t).filter((a) => !seen.has(a.title) && seen.add(a.title)).slice(0, 12); }
+  for (const k of keys) { const seen = new Set(); out[k] = out[k].sort((a, b) => b.t - a.t).filter((a) => !seen.has(a.title) && seen.add(a.title)).slice(0, k === "world" ? 40 : 12); }
   return out;
 }
 export default async function handler(req, res) {
-  const d = await collect();
+  const d = await collect(fetch, Date.now(), 3 * 864e5, req.query?.topic === "world" ? ["world"] : ["kr", "us"]);
   res.setHeader("cache-control", "public, s-maxage=900, stale-while-revalidate=1800");
   res.status(200).json({ fetched_at: new Date().toISOString(), note: "언론사 공식 RSS — 제목·링크만 표시", ...d });
 }

@@ -8,9 +8,11 @@ import { backtest, models, scenario } from "./screens/analysis.js";
 import { portfolio } from "./screens/private.js";
 import { publicView, dataView, connect, migrate } from "./screens/info.js";
 import { desk } from "./screens/desk.js";
+import { flows } from "./screens/flows.js";
+import { risk } from "./screens/risk.js";
 
 // ── 셸 ──
-const NAV = [["", "1면", ""], ["desk", "투자 데스크", ""], ["profile", "투자성향", "A"], ["strategies", "전략", "B"], ["backtest", "검증", "C"], ["models", "예측", "D"], ["scenario", "위기", "E"], ["portfolio", "내 원장", "F"], ["public", "공개면", ""], ["data", "자료실", ""], ["connect", "증권 연결", ""]];
+const NAV = [["", "1면", ""], ["desk", "투자 데스크", ""], ["flows", "돈의 흐름", ""], ["risk", "리스크 상황실", ""], ["profile", "투자성향", "A"], ["strategies", "전략", "B"], ["backtest", "검증", "C"], ["models", "예측", "D"], ["scenario", "위기", "E"], ["portfolio", "내 원장", "F"], ["public", "공개면", ""], ["data", "자료실", ""], ["connect", "증권 연결", ""]];
 // 섹션 머리 문구 — 화면 모듈을 건드리지 않고 지면 문구만 바꾼다(null = 화면 원문 유지)
 const COPY = {
   profile: ["A면 · 투자자 프로필", "당신이 견딜 수 있는 손실은 얼마인가", "여덟 개의 질문으로 감내할 수 있는 최대 낙폭을 정합니다. 답변은 이 브라우저에만 남고, 금융회사의 법정 적합성 진단을 대신하지 않습니다."],
@@ -63,7 +65,7 @@ function tape() {
 }
 
 // ── 라우터 ──
-const ROUTES = { "": lobby, desk, profile, strategies, backtest, models, scenario, portfolio, public: publicView, data: dataView, connect, migrate };
+const ROUTES = { "": lobby, desk, flows, risk, profile, strategies, backtest, models, scenario, portfolio, public: publicView, data: dataView, connect, migrate };
 function route() {
   const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
   const fn = ROUTES[name] || lobby, main = $("#main");
