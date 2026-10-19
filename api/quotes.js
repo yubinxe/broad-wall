@@ -11,5 +11,5 @@ export default async function handler(req, res) {
     out.live && (async () => { try { out.indicators = await tossPrices(env, ["KOSPI", "KOSDAQ"], { indicators: true }); } catch (e) { out.errors.push(e.message); } })(),
   ]);
   res.setHeader("cache-control", out.live ? "public, s-maxage=30, stale-while-revalidate=60" : "public, s-maxage=600");
-  res.status(200).json(out);
+  res.status(200).json({ ...out, errors: [...new Set(out.errors)] });
 }

@@ -49,7 +49,7 @@ export async function tossAuth(env, fetchFn = fetch) {
   if (!tossToken || tossToken.exp < Date.now() + 60_000) {
     const body = new URLSearchParams({ grant_type: "client_credentials", client_id: env.TOSS_CLIENT_ID, client_secret: env.TOSS_CLIENT_SECRET });
     const r = await fetchFn(`${TOSS}/oauth2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
-    const j = await r.json().catch(() => ({})); if (!r.ok || !j.access_token) throw new Error(`토스증권 토큰 발급 실패 (${r.status} ${j.error || ""})`.trim());
+    const j = await r.json().catch(() => ({})); if (!r.ok || !j.access_token) throw new Error(j.error_description === "IP address not allowed" ? "토스증권: 허용되지 않은 IP — WTS 설정 > Open API > 허용 IP 관리에 서버 IP 등록 필요" : `토스증권 토큰 발급 실패 (${r.status} ${j.error || ""})`.trim());
     tossToken = { value: j.access_token, exp: Date.now() + (Number(j.expires_in) || 3600) * 1000 };
   }
   return { authorization: `Bearer ${tossToken.value}` };
