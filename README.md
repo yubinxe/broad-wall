@@ -14,9 +14,8 @@ js/profile.js         투자성향 8문항 → 5유형, 허용 낙폭
 js/migrate.js         클래식 데이터 스캔·백업·가져오기(원본 비파괴)
 js/charts.js, art.js  SVG 차트, 스카이라인·인장·길로셰
 data/market.json      빌드된 월간 데이터(1972-01~) + 출처·SHA-256·품질 검증
-api/broker/status.js  증권사 설정 여부(값 미노출)
-api/broker/holdings.js 보유 조회(관리자 토큰 필수, no-store, 계좌번호 미포함)
-api/_lib/brokers.js   KIS · 토스증권 클라이언트
+api/quotes.js         공개 시세(네이버 국내 · Yahoo 미국) + ECB 환율
+api/news.js           언론사 공식 RSS 헤드라인·대표 사진
 classic/ → 이전 v1 배포로 리다이렉트(vercel.json)
 tests/                node:test 18건
 ```
@@ -33,9 +32,7 @@ Vercel `invest-helper` 프로젝트에 이 폴더를 그대로 배포(`vercel de
 
 | 변수 | 용도 |
 |---|---|
-| `MERIDIAN_ADMIN_TOKEN` | 보유 조회 함수 보호(16자 이상) |
-| `KIS_APP_KEY` `KIS_APP_SECRET` `KIS_ACCOUNT`(8-2) `KIS_ENV`(real/mock) | 한국투자증권 국내주식 잔고 |
-| `TOSS_CLIENT_ID` `TOSS_CLIENT_SECRET` (`TOSS_ACCOUNT_SEQ`) | 토스증권 — 공식 OpenAPI 대조, accountSeq 생략 시 종합매매 계좌 자동 선택 |
+| (없음) | 증권사 계좌·API 연동을 하지 않습니다 |
 
 ## 데이터 마이그레이션(클래식 → v2)
 1. `/#/migrate` 스캔 — 새 키(`meridian.v2.*`) 외 localStorage 항목 나열
@@ -47,12 +44,12 @@ Vercel `invest-helper` 프로젝트에 이 폴더를 그대로 배포(`vercel de
 - 시세: 월간 공개 데이터, 실시간 아님. S&P 500 은 월평균 지수.
 - 무위험수익률 원자료 없음 → Sharpe 는 rf 0%.
 - 10년 국채 수익은 모형 추정, 환율 미반영.
-- 증권사 연동은 자격증명이 없어 실호출 미검증. 토스증권 공식 문서 원문은 작업 환경에서 접근 불가.
+- 증권사 API 연동은 2026-10-19 제거(공개 지면 성격 · 개인 계좌 정보를 다루지 않음).
 
 ## 브랜드
 - 이름 **BROAD & WALL** — NYSE 정문이 있는 브로드 스트리트와 월 스트리트의 교차로. 업무명 "Quant Research Desk".
 - 마크: 거래소 정면(박공·기둥 6·기단) + 이중 괘선 액자. `favicon.svg` · `icons/` PNG · `js/art.js` `MARK` 동일 도형.
-- 호환 유지: 환경변수 `MERIDIAN_ADMIN_TOKEN`, localStorage 키 `meridian.v2.*` 는 그대로(기존 금고·설정 보존).
+- 호환 유지: localStorage 키 `meridian.v2.*` 는 그대로(기존 금고·설정 보존).
 - 상표 조사는 하지 않았습니다. 상용화 전 KIPRIS·USPTO 검색 필요.
 
 ## 배포 (Vercel)

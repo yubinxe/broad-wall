@@ -27,7 +27,7 @@ export function brief(el, news0) {
       ${["KOSPI", "KOSDAQ"].map((s) => `<tr><td>${s}</td><td>${I[s] ? fmt(I[s].price, "X") + chg(I[s]) : "—"}</td></tr>`).join("")}
     </tbody></table>
     <table class="mkt wl"><thead><tr><td>관심종목</td><td>현재가 · 등락</td></tr></thead><tbody>${w.map((s) => `<tr><td><button class="x" data-del="${esc(s)}" aria-label="${esc(s)} 삭제">×</button>${P[s]?.name ? `${esc(P[s].name)} <small>${esc(s)}</small>` : esc(s)}</td><td>${P[s] ? `${fmt(P[s].price, P[s].currency)} <small>${esc(P[s].currency || "")}</small>${chg(P[s])}` : "—"}</td></tr>`).join("")}</tbody></table>
-    <p class="cap">${j.live ? `${esc(j.source)} 현재가 · ${new Date(j.fetched_at).toLocaleTimeString("ko-KR")} 조회${/토스/.test(j.source) ? "" : " · 공개 시세라 지연될 수 있음"}` : "현재가를 불러오지 못했습니다."} · 환율은 ECB 일간 기준환율.${j.errors?.length ? `<br><span class="neg">${esc(j.errors.join(" / "))}</span>` : ""}</p>`;
+    <p class="cap">${j.live ? `${esc(j.source)} 현재가 · ${new Date(j.fetched_at).toLocaleTimeString("ko-KR")} 조회 · 공개 시세라 지연될 수 있음` : "현재가를 불러오지 못했습니다."} · 환율은 ECB 일간 기준환율.${j.errors?.length ? `<br><span class="neg">${esc(j.errors.join(" / "))}</span>` : ""}</p>`;
     q.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => { save(load().filter((x) => x !== b.dataset.del)); quotes(); }));
     if (j.live && !el._timer) el._timer = setInterval(() => document.body.contains(el) ? quotes() : clearInterval(el._timer), 60000);
   };

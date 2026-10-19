@@ -1,4 +1,4 @@
-// 키 없이 받는 공개 시세(토스 미연결·차단 시 대체) — 국내 6자리 종목·지수는 네이버 증권, 미국 티커는 Yahoo Finance 차트.
+// 키 없이 받는 공개 시세 — 국내 6자리 종목·지수는 네이버 증권, 미국 티커는 Yahoo Finance 차트.
 // 둘 다 공식 공개 API가 아니므로 응답 형식이 바뀌면 조용히 빠지고, 화면에는 출처와 '지연 가능'을 함께 적는다.
 const UA = { "user-agent": "Mozilla/5.0 (compatible; BroadWallReader/1.0)" };
 const n = (v) => { const x = Number(String(v ?? "").replace(/,/g, "")); return Number.isFinite(x) ? x : null; };

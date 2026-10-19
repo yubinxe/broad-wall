@@ -19,3 +19,4 @@
 - 쟁점 분류 실데이터 점검: vote/은행/달러 단독 오분류 제거, 호르무즈·대이란·푸틴·젤렌스키·rate rises 추가.
 - 부팅: js/*.js 모듈 ~20개 개별 요청 → 하나라도 끊기면 "지면을 펼치는 중"에 멈춤(WebKit에서 재현). 이제 `npm run build`(esbuild) → dist/app.js 단일 번들, boot.js 가 data-app 으로 주입·실패 시 1회 자동 새로고침. **js/ 수정 후 반드시 npm run build + index.html dist 버전 올리기.**
 - 보도사진: RSS media:content/thumbnail(연합뉴스·BBC)만, PHOTO_HOSTS=CSP img-src 일치 필수. 1~3면 쟁점 사진 + 4면 '사진으로 보는 오늘'.
+- 2026-10-19 **증권사 API 연동 제거**(사용자 결정: 공개 지면, 투자 의사결정 지원 도구). api/broker·brokers.js·증권 연결 화면·원장 불러오기 삭제. Vercel TOSS_* 값은 "removed"로 덮어씀(대시보드에서 삭제 가능). 시세 = 공개 시세만. 문구: "투자 의사결정 지원 지면 · 정보 제공 · 투자 권유 아님".

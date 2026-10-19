@@ -5,9 +5,6 @@ import * as P from "../js/portfolio.js";
 import * as R from "../js/profile.js";
 import { seal, open } from "../js/vault.js";
 import { scanLegacy, backupLegacy } from "../js/migrate.js";
-import * as B from "../api/_lib/brokers.js";
-import status from "../api/broker/status.js";
-import holdings from "../api/broker/holdings.js";
 
 class LS { constructor(o = {}) { this.m = new Map(Object.entries(o)); } get length() { return this.m.size; } key(i) { return [...this.m.keys()][i]; } getItem(k) { return this.m.get(k) ?? null; } setItem(k, v) { this.m.set(k, String(v)); } removeItem(k) { this.m.delete(k); } }
 globalThis.localStorage = new LS();
@@ -56,47 +53,6 @@ test("마이그레이션: v2 키 제외, 보유 후보 탐지, 백업에 원본 
 function call(h, { query = {}, headers = {}, method = "GET" } = {}) {
   return new Promise((resolve) => { const res = { headers: {}, code: 200, setHeader(k, v) { this.headers[k] = v; }, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b, headers: this.headers }); } }; Promise.resolve(h({ method, query, headers }, res)); });
 }
-test("상태 API: 값 노출 없이 설정 여부만", async () => {
-  process.env.KIS_APP_KEY = "k-secret-value"; process.env.KIS_APP_SECRET = "s"; process.env.KIS_ACCOUNT = "12345678-01"; delete process.env.TOSS_CLIENT_ID;
-  const r = await call(status);
-  assert.equal(r.body.brokers.kis.configured, true); assert.equal(r.body.brokers.toss.configured, false);
-  assert.ok(!JSON.stringify(r.body).includes("k-secret-value") && !JSON.stringify(r.body).includes("12345678"));
-  assert.equal(r.headers["Cache-Control"], "no-store");
-});
-test("보유 API: 관리자 토큰 없으면 401, 짧은 토큰 설정은 무효", async () => {
-  delete process.env.MERIDIAN_ADMIN_TOKEN;
-  assert.equal((await call(holdings, { query: { broker: "kis" }, headers: { authorization: "Bearer x" } })).code, 401);
-  process.env.MERIDIAN_ADMIN_TOKEN = "short";
-  assert.equal((await call(holdings, { query: { broker: "kis" }, headers: { authorization: "Bearer short" } })).code, 401);
-  process.env.MERIDIAN_ADMIN_TOKEN = "a-very-long-admin-token-123";
-  assert.equal((await call(holdings, { query: { broker: "toss" }, headers: { authorization: "Bearer a-very-long-admin-token-123" } })).code, 409);
-  assert.equal((await call(holdings, { query: { broker: "xx" }, headers: { authorization: "Bearer a-very-long-admin-token-123" } })).code, 400);
-});
-test("KIS 요청 규격(공식 예제 대조): tokenP → inquire-balance TTTC8434R, 계좌번호는 응답에 없음", async () => {
-  B._reset(); const calls = [];
-  const fake = async (url, init = {}) => { calls.push({ url, init }); if (url.endsWith("/oauth2/tokenP")) return { ok: true, json: async () => ({ access_token: "T", expires_in: 86400 }) };
-    return { ok: true, headers: { get: () => "D" }, json: async () => ({ rt_cd: "0", output1: [{ pdno: "005930", prdt_name: "삼성전자", hldg_qty: "10", pchs_avg_pric: "71000.0000", prpr: "210000" }, { pdno: "000000", hldg_qty: "0" }] }) }; };
-  const env = { KIS_APP_KEY: "AK", KIS_APP_SECRET: "AS", KIS_ACCOUNT: "12345678-01" };
-  const h = await B.kisHoldings(env, fake);
-  assert.deepEqual(h, [{ code: "005930", name: "삼성전자", qty: 10, avg: 71000, price: 210000, ccy: "KRW", cls: "EQ" }]);
-  assert.match(calls[0].url, /^https:\/\/openapi\.koreainvestment\.com:9443\/oauth2\/tokenP$/);
-  const u = new URL(calls[1].url); assert.equal(u.pathname, "/uapi/domestic-stock/v1/trading/inquire-balance"); assert.equal(u.searchParams.get("CANO"), "12345678"); assert.equal(u.searchParams.get("ACNT_PRDT_CD"), "01"); assert.equal(u.searchParams.get("INQR_DVSN"), "02");
-  assert.equal(calls[1].init.headers.tr_id, "TTTC8434R"); assert.equal(calls[1].init.headers.custtype, "P");
-  B._reset(); await B.kisHoldings({ ...env, KIS_ENV: "mock" }, fake); assert.equal(calls[3].init.headers.tr_id, "VTTC8434R"); assert.match(calls[2].url, /openapivts/);
-  await assert.rejects(B.kisHoldings({ ...env, KIS_ACCOUNT: "123" }, fake), /형식/);
-});
-test("토스증권 요청 규격(공식 OpenAPI 예시 응답): form 토큰 → accountSeq 헤더 → result.items", async () => {
-  B._reset(); const calls = [];
-  const item = { symbol: "005930", name: "삼성전자", marketCountry: "KR", currency: "KRW", quantity: "100", lastPrice: "72000", averagePurchasePrice: "65000", marketValue: { purchaseAmount: "6500000", amount: "7200000" } };
-  const fake = async (url, init = {}) => { calls.push({ url, init }); if (url.endsWith("/oauth2/token")) return { ok: true, json: async () => ({ access_token: "T", token_type: "Bearer", expires_in: 86400 }) }; if (url.endsWith("/accounts")) return { ok: true, json: async () => ({ result: [{ accountNo: "12345678901", accountSeq: 1, accountType: "BROKERAGE" }] }) }; return { ok: true, json: async () => ({ result: { totalPurchaseAmount: {}, items: [item, { ...item, symbol: "AAPL", name: "Apple", marketCountry: "US", currency: "USD", quantity: "2", lastPrice: "250.5", averagePurchasePrice: "150" }] } }) }; };
-  const h = await B.tossHoldings({ TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s" }, fake);
-  assert.deepEqual(h, [{ code: "005930", name: "삼성전자", qty: 100, avg: 65000, price: 72000, ccy: "KRW", cls: "EQ", market: "KR" }, { code: "AAPL", name: "Apple", qty: 2, avg: 150, price: 250.5, ccy: "USD", cls: "EQ", market: "US" }]);
-  assert.equal(calls[0].init.headers["content-type"], "application/x-www-form-urlencoded"); assert.equal(calls[0].init.body.get("grant_type"), "client_credentials");
-  assert.equal(calls[2].init.headers["X-Tossinvest-Account"], "1"); assert.equal(calls[2].init.headers.authorization, "Bearer T");
-  await B.tossHoldings({ TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s", TOSS_ACCOUNT_SEQ: "3" }, fake); assert.equal(calls.length, 4, "토큰 재사용·계좌 조회 생략"); assert.equal(calls[3].init.headers["X-Tossinvest-Account"], "3");
-  B._reset(); await assert.rejects(B.tossHoldings({ TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s" }, async () => ({ ok: false, status: 401, json: async () => ({ error: "invalid_client" }) })), /invalid_client/);
-});
-
 test("투자 데스크: 체온계·신호 변경·리밸런싱 계산", async () => {
   const K = await import("../js/desk.js"), Q = await import("../js/quant.js");
   const m = JSON.parse(readFileSync(new URL("../data/market.json", import.meta.url))), D = Q.prepare(m);
@@ -119,15 +75,6 @@ test("뉴스: RSS 파싱(CDATA·엔티티)·3일 초과 제외·중복 제거·�
   assert.equal(d.kr.length, 1, "중복·오래된 기사 제외"); assert.equal(d.kr[0].title, "코스피 & 환율");
   assert.ok(d.failed.some((f) => f.startsWith("Financial Times")));
 });
-test("토스증권 현재가: /api/v1/prices · 지표는 market-indicators 경로", async () => {
-  B._reset(); const calls = [];
-  const fake = async (url, init = {}) => { calls.push(url); if (url.endsWith("/oauth2/token")) return { ok: true, json: async () => ({ access_token: "T", expires_in: 86400 }) }; return { ok: true, json: async () => ({ result: [{ symbol: url.includes("indicators") ? "KOSPI" : "005930", timestamp: "2026-03-25T09:30:00.123+09:00", lastPrice: "72000", currency: "KRW" }] }) }; };
-  const env = { TOSS_CLIENT_ID: "c", TOSS_CLIENT_SECRET: "s" };
-  assert.deepEqual(await B.tossPrices(env, ["005930"], {}, fake), [{ symbol: "005930", price: 72000, currency: "KRW", at: "2026-03-25T09:30:00.123+09:00" }]);
-  await B.tossPrices(env, ["KOSPI", "KOSDAQ"], { indicators: true }, fake);
-  assert.match(calls[1], /\/api\/v1\/prices\?symbols=005930$/); assert.match(calls[2], /\/api\/v1\/market-indicators\/prices\?symbols=KOSPI%2CKOSDAQ$/); assert.equal(calls.length, 3, "토큰 1회");
-});
-
 test("리스크 상황실: 사례 반응·요약·시나리오 계산", async () => {
   const K = await import("../js/risk.js"), Q = await import("../js/quant.js");
   const D = Q.prepare(JSON.parse(readFileSync(new URL("../data/market.json", import.meta.url))));
@@ -164,25 +111,28 @@ test("쟁점 분류: 키워드 일치·단어 경계·중복 제거·과거 사�
   assert.equal(T.analog(D, T.TOPICS.find((x) => x.id === "oil")).rows.length, 4);
 });
 
-test("공개 시세 대체: 토스 차단 시 네이버(국내)·Yahoo(미국)로 채우고 출처 표기", async () => {
+test("공개 시세: 네이버(국내 종목·지수)·Yahoo(미국), 실패 종목은 사유와 함께 제외", async () => {
   const { quotes } = await import("../api/quotes.js");
-  const calls = [], fake = async (u) => { calls.push(u);
+  const fake = async (u) => {
     if (u.includes("frankfurter")) return { ok: true, json: async () => ({ date: "2026-10-16", rates: { KRW: 1400 } }) };
-    if (u.includes("tossinvest")) return { ok: false, status: 403, json: async () => ({ error: "access_denied", error_description: "IP address not allowed" }) };
     if (u.includes("domestic/stock/005930")) return { ok: true, json: async () => ({ datas: [{ itemCode: "005930", stockName: "삼성전자", closePrice: "215,000", fluctuationsRatio: "-0.23", localTradedAt: "2026-10-19T10:55:34+09:00" }] }) };
     if (u.includes("domestic/index/")) return { ok: true, json: async () => ({ datas: [{ itemCode: "KOSPI", closePrice: "5,635.45", fluctuationsRatio: "-0.58" }, { itemCode: "KOSDAQ", closePrice: "1,100.10", fluctuationsRatio: "0.10" }] }) };
     if (u.includes("yahoo.com/v8/finance/chart/AAPL")) return { ok: true, json: async () => ({ chart: { result: [{ meta: { currency: "USD", regularMarketPrice: 343.46, regularMarketChangePercent: 0.427, regularMarketTime: 1792180801 } }] } }) };
     if (u.includes("yahoo.com")) return { ok: false, status: 404, json: async () => ({}) };
     throw new Error("unexpected " + u); };
-  const B = await import("../api/_lib/brokers.js"); B._reset?.();
-  const o = await quotes({ TOSS_CLIENT_ID: "id", TOSS_CLIENT_SECRET: "secret-value-123" }, ["AAPL", "005930", "ZZZZ"], fake);
+  const o = await quotes(["AAPL", "005930", "ZZZZ"], fake);
   assert.equal(o.live, true); assert.match(o.source, /네이버/); assert.match(o.source, /Yahoo/);
   const P = Object.fromEntries(o.prices.map((p) => [p.symbol, p]));
   assert.equal(P["005930"].price, 215000); assert.ok(Math.abs(P["005930"].chg + 0.0023) < 1e-12); assert.equal(P["005930"].currency, "KRW");
   assert.equal(P.AAPL.price, 343.46); assert.ok(Math.abs(P.AAPL.chg - 0.00427) < 1e-12); assert.equal(P.ZZZZ, undefined);
   assert.deepEqual(o.indicators.map((i) => [i.symbol, i.price]), [["KOSPI", 5635.45], ["KOSDAQ", 1100.1]]);
-  assert.ok(o.errors.some((e) => /허용되지 않은 IP/.test(e)), "토스 차단 사유 표시"); assert.ok(o.errors.some((e) => /ZZZZ/.test(e)));
-  assert.ok(!JSON.stringify(o).includes("secret-value-123"), "키 노출 없음");
+  assert.ok(o.errors.some((e) => /ZZZZ/.test(e)));
+});
+
+test("증권사 연동 제거: 브로커 함수·화면 없음", async () => {
+  const { existsSync } = await import("node:fs");
+  for (const f of ["../api/broker/status.js", "../api/broker/holdings.js", "../api/_lib/brokers.js"]) assert.ok(!existsSync(new URL(f, import.meta.url)), f);
+  assert.ok(!/connect|토스|증권 연결/.test(readFileSync(new URL("../js/app.js", import.meta.url), "utf8").replace(/isConnected|preconnect/g, "")));
 });
 
 test("보도사진: RSS 대표 사진만, 허용 호스트·https 만, BBC 480px", async () => {

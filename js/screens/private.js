@@ -33,7 +33,7 @@ export function portfolio(el) {
   <div class="card"><h3>CSV 가져오기</h3><p class="small muted">열: 종목코드, 종목명, 수량, 평균단가, 현재가, 통화(KRW/USD), 자산군(주식/채권/금/현금/기타). 파일은 서버로 올라가지 않고 이 브라우저에서만 읽습니다.</p>
     <input type="file" id="csv" accept=".csv,text/csv"><div id="csvMsg" class="small" style="margin-top:8px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm ghost" id="exp">CSV 내보내기</button><button class="btn sm ghost" id="tpl">예시 CSV</button><label class="field" style="max-width:150px">USD→KRW<input id="fx" type="number" step="0.1" value="${vd.fx || 1300}"></label></div>
-    <hr class="double"><h3>증권사에서 불러오기</h3><div id="brk" class="small muted"><span class="spin"></span> 연동 상태 확인 중…</div></div></div>
+    </div></div>
   <details class="fold" style="margin-top:16px"><summary>금고 관리</summary><p class="small">금고는 이 브라우저 localStorage 에 AES-256-GCM 암호문으로만 저장됩니다(PBKDF2 ${V.ITER.toLocaleString()}회). 암호구를 잃으면 복구할 수 없습니다. 15분 동안 조작이 없으면 자동으로 잠깁니다.</p><button class="btn danger sm" id="wipe">금고 삭제</button></details>`}
   </div>`;
   document.body.classList.toggle("mask-on", !!settings.mask);
@@ -52,7 +52,6 @@ export function portfolio(el) {
   $("#tpl").onclick = () => dl("meridian-template.csv", "종목코드,종목명,수량,평균단가,현재가,통화,자산군\nSPY,S&P 500 ETF,10,500,640,USD,주식\n148070,국고채 10년 ETF,50,110000,112000,KRW,채권");
   $("#fx").onchange = async (e) => { await V.save({ ...vd, fx: Number(e.target.value) || 1300 }); portfolio(el); };
   $("#wipe").onclick = () => { if (confirm("금고를 삭제하면 보유 종목 데이터가 지워집니다. 계속할까요?")) { V.destroy(); refresh(); } };
-  brokerPanel($("#brk"), vd, persist);
 }
 portfolio.title = "내 포트폴리오";
 function vaultGate(el) {
@@ -70,17 +69,4 @@ function demoView(el) { // 금고 없이도 데모만 볼 수 있는 읽기 전�
   <div class="grid g2" style="margin-top:16px"><div class="chart" id="dd"></div><div class="chart" id="dc"></div></div><p style="margin-top:16px"><a class="btn" href="#/portfolio">내 금고로 돌아가기</a></p></div>`;
   C.donut($("#dd"), { parts: Object.entries(a.byClass).map(([k, v]) => ({ label: P.CLASSES[k], value: v })), center: [C.pctU(a.ret), "DEMO"], caption: "데모 · 가상 데이터" });
   C.hbars($("#dc"), { rows: a.rows.map((r) => ({ label: r.name.replace("[DEMO] ", ""), value: r.contrib })), caption: "데모 · 종목 손익 기여" });
-}
-async function brokerPanel(box, vd, persist) {
-  let st; try { const r = await fetch("/api/broker/status", { cache: "no-store" }); st = r.ok ? await r.json() : null; } catch { st = null; }
-  if (!st) { box.innerHTML = `<span class="chip off">서버 함수 응답 없음</span> 정적 환경에서는 증권사 연동을 쓸 수 없습니다. <a href="#/connect">자세히</a>`; return; }
-  const rows = Object.entries(st.brokers).map(([k, b]) => `<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span class="chip ${b.configured ? "real" : "off"}">${b.configured ? "설정됨" : "미설정"}</span><b>${esc(b.name)}</b>${b.configured && st.auth ? `<button class="btn sm ghost" data-b="${k}" style="margin-left:auto">불러오기</button>` : ""}</div>`).join("");
-  box.innerHTML = rows + (st.auth ? `<label class="field" style="margin-top:8px">관리자 토큰 (금고에만 저장)<input type="password" id="adm" value="${esc(vd.adminToken || "")}" autocomplete="off"></label>` : `<p class="small muted">서버에 관리자 토큰(MERIDIAN_ADMIN_TOKEN)이 설정되지 않아 불러오기가 꺼져 있습니다.</p>`) + `<p id="bm" class="small"></p>`;
-  $$("[data-b]", box).forEach((b) => (b.onclick = async () => {
-    const tok = $("#adm", box).value; $("#bm", box).innerHTML = '<span class="spin"></span> 조회 중…';
-    try { const r = await fetch(`/api/broker/holdings?broker=${b.dataset.b}`, { headers: { authorization: "Bearer " + tok }, cache: "no-store" }); const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status);
-      vd.adminToken = tok; // 토큰은 암호화된 금고 안에만 남는다
-      if (confirm(`${j.holdings.length}개 종목을 불러왔습니다. 기존 '${b.dataset.b}' 연동 종목을 교체할까요?`)) await persist([...(vd.holdings || []).filter((h) => h.src !== b.dataset.b), ...j.holdings.map((h) => ({ ...h, id: crypto.randomUUID(), src: b.dataset.b }))]);
-    } catch (err) { $("#bm", box).innerHTML = `<span class="neg">실패: ${esc(err.message)}</span>`; }
-  }));
 }

@@ -1,4 +1,4 @@
-// 공개 포트폴리오 · 데이터 · 연동 · 마이그레이션 — 공개 화면은 금고를 읽지 않는다
+// 공개 포트폴리오 · 데이터 · 마이그레이션 — 공개 화면은 금고를 읽지 않는다
 import * as Q from "../quant.js";
 import * as C from "../charts.js";
 import { $, $$, esc, settings, saveSettings, market, D, cache, run, bench, profileResult, currentWeights, norm, costForm, bindCost, refresh } from "../core.js";
@@ -27,23 +27,6 @@ export function dataView(el) {
   <h2 class="sec"><span class="rn">iii</span>방법론 메모</h2><ul>${market.notes.map((n) => `<li>${esc(n)}</li>`).join("")}<li>CPI 는 발표 지연을 반영해 t 월말 판단에 t−1 월 값까지만 사용합니다(엔진에서 강제).</li><li>보간된 배당 월: ${Object.keys(q.imputed).length}개월 (${Object.keys(q.imputed)[0] ?? "—"} 이후).</li></ul></div>`;
 }
 dataView.title = "데이터";
-
-// ── 연동 ──
-export async function connect(el) {
-  el.innerHTML = `<div class="wrap page"><p class="kicker">Brokerage Desk</p><h1>증권사 연동 — 확인된 범위만</h1><p class="lede">연결되지 않은 계좌를 연결된 것처럼 보여 주지 않습니다. 아래 상태는 서버 함수가 실제 환경변수 설정 여부만 보고 판단합니다(값은 노출하지 않음).</p>
-  <div id="st" style="margin-top:20px"><span class="spin"></span> 서버 상태 확인 중…</div>
-  <h2 class="sec"><span class="rn">i</span>지원 현황</h2><div class="scroll"><table class="ledger cards"><thead><tr><th>증권사</th><th>공식 지원</th><th>이 사이트</th><th>필요 설정</th></tr></thead><tbody>
-  <tr><td data-l="증권사"><b>토스증권</b></td><td data-l="공식 지원">공식 OpenAPI 3.0 명세 대조 완료(2026-10-17) — OAuth2 Client Credentials(<span class="mono">POST /oauth2/token</span>), 계좌 목록(<span class="mono">/api/v1/accounts</span>, 종합매매만), 보유 주식(<span class="mono">/api/v1/holdings</span>, 국내·미국 주식) · 헤더 X-Tossinvest-Account = accountSeq</td><td data-l="이 사이트">보유 조회 함수 구현 · 실계좌 호출은 자격증명 등록 후 확인 → 아래 실시간 상태 참조</td><td data-l="필요 설정" class="mono small">TOSS_CLIENT_ID · TOSS_CLIENT_SECRET · (선택) TOSS_ACCOUNT_SEQ</td></tr>
-  <tr><td data-l="증권사"><b>한국투자증권 KIS</b></td><td data-l="공식 지원">KIS Developers 국내주식 잔고조회 <span class="mono">/uapi/domestic-stock/v1/trading/inquire-balance</span> (TR TTTC8434R · 모의 VTTC8434R)</td><td data-l="이 사이트">조회 함수 구현 · 공식 GitHub 예제와 요청 규격 대조 · 실계좌 호출은 자격증명이 없어 <span class="chip off">미검증</span></td><td data-l="필요 설정" class="mono small">KIS_APP_KEY · KIS_APP_SECRET · KIS_ACCOUNT(8-2) · KIS_ENV</td></tr>
-  <tr><td data-l="증권사"><b>CSV · 수동 입력</b></td><td data-l="공식 지원">—</td><td data-l="이 사이트"><span class="chip real">작동</span> 이 기기에서만 처리 · 암호화 저장</td><td data-l="필요 설정">없음</td></tr></tbody></table></div>
-  <div class="note" style="margin-top:14px"><b>토스증권 연결 순서</b> — ① 토스증권 개발자센터(developers.tossinvest.com)에서 앱 등록 후 Client ID·Secret 발급 ② Vercel 프로젝트 → Settings → Environment Variables 에 TOSS_CLIENT_ID · TOSS_CLIENT_SECRET · MERIDIAN_ADMIN_TOKEN(16자 이상 임의 문자열) 저장 후 재배포 ③ 이 사이트 F면 비공개 원장 → 증권사에서 불러오기 → 관리자 토큰 입력 → 불러오기. 토큰은 24시간 유효하고 재발급하면 이전 토큰이 즉시 무효가 됩니다. 개발자센터에 IP 허용 설정이 있다면 Vercel 함수는 출구 IP가 고정이 아니므로 호출이 거부될 수 있습니다(공식 명세에는 IP 제한 언급 없음).</div>
-  <div class="note" style="margin-top:10px"><b>보안 구조</b> — 증권사 키는 서버 환경변수에만 두고 브라우저로 보내지 않습니다. 보유 조회 함수는 관리자 토큰(MERIDIAN_ADMIN_TOKEN)을 요구하고 응답에 계좌번호를 넣지 않으며 캐시하지 않습니다. 공개 화면은 이 함수를 부르지 않습니다.</div>
-  <h2 class="sec"><span class="rn">ii</span>시세 성격</h2><p>이 사이트의 시장 데이터는 <b>월간 · 지연</b>이며 실시간 시세가 아닙니다(마지막 월 ${D.end}). 보유 종목 현재가는 사용자가 입력하거나 증권사 조회 결과를 씁니다.</p></div>`;
-  try { const r = await fetch("/api/broker/status", { cache: "no-store" }); const st = await r.json();
-    $("#st").innerHTML = `<div class="term"><div class="th"><span>LIVE STATUS · 서버 함수</span><span>${esc(st.checked_at)}</span></div><div class="tb"><table><tbody>${Object.values(st.brokers).map((b) => `<tr><td>${esc(b.name)}</td><td class="${b.configured ? "up" : "dn"}">${b.configured ? "자격증명 설정됨" : "미설정 — 연결 안 됨"}</td><td style="color:var(--tt-2)">${esc(b.note)}</td></tr>`).join("")}<tr><td>관리자 인증</td><td class="${st.auth ? "up" : "dn"}">${st.auth ? "설정됨" : "미설정"}</td><td style="color:var(--tt-2)">비공개 조회 함수 보호</td></tr></tbody></table></div></div>`;
-  } catch { $("#st").innerHTML = `<p class="note warn">서버 함수에 연결할 수 없습니다(정적 미리보기 환경). 증권사 연동은 꺼진 상태로 표시합니다.</p>`; }
-}
-connect.title = "연동";
 
 // ── 마이그레이션 ──
 export function migrate(el) {
