@@ -99,10 +99,10 @@ new MutationObserver(() => $$(".scroll:not([tabindex])").forEach((e) => { e.tabI
 (async () => {
   try {
     document.getElementById("boot")?.remove(); shell();
-    try { const r = await fetch("data/market.json", { cache: "no-cache" }); if (!r.ok) throw new Error("HTTP " + r.status); setMarket(await r.json()); }
+    try { const get = async () => { const r = await fetch("data/market.json", { cache: "no-cache" }); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }; setMarket(await get().catch(() => new Promise((ok) => setTimeout(ok, 800)).then(get))); } // 일시 끊김 1회 재시도
     catch (e) { $("#main").innerHTML = `<div class="wrap page"><p class="note warn">시장 데이터를 불러오지 못했습니다: ${esc(e.message)}</p></div>`; window.__booted = true; return; }
     try { tape(); } catch (e) { console.error(e); }
     addEventListener("hashchange", route); addEventListener("vault:lock", () => { if (location.hash.startsWith("#/portfolio")) route(); }); route();
-    window.__booted = true;
+    window.__booted = true; try { sessionStorage.removeItem("bw.retry"); } catch {}
   } catch (e) { console.error(e); document.body.insertAdjacentHTML("beforeend", '<div id="boot" class="boot"></div>'); window.__bootErr?.((e && e.stack) || e); }
 })();
