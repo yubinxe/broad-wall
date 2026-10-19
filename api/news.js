@@ -24,10 +24,18 @@ const NOISE = /^\s*[\[〈<(]\s*(부고|인사|게시판|포토|사진|화보|알
 const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 const clean = (s = "") => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "").replace(/&(#x?[0-9a-f]+|\w+);/gi, (m, e) => (e[0] === "#" ? String.fromCodePoint(e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : +e.slice(1)) : ENT[e.toLowerCase()] ?? m)).replace(/\s+/g, " ").trim();
 const tag = (x, t) => clean((x.match(new RegExp(`<${t}[^>]*>([\\s\\S]*?)</${t}>`, "i")) || [])[1]);
+// 사진 호스트는 CSP img-src(vercel.json)와 같아야 한다
+export const PHOTO_HOSTS = ["img.yna.co.kr", "ichef.bbci.co.uk"];
+// 언론사가 RSS 에 함께 실은 대표 사진(media:content · media:thumbnail · image enclosure)만 쓴다. https 만 허용
+export function photo(x) {
+  const m = x.match(/<media:content[^>]*url="([^"]+)"[^>]*>/i) || x.match(/<media:thumbnail[^>]*url="([^"]+)"/i) || x.match(/<enclosure[^>]*url="([^"]+)"[^>]*type="image/i) || x.match(/<enclosure[^>]*type="image[^"]*"[^>]*url="([^"]+)"/i);
+  const u = m && clean(m[1]); if (!u || !/^https:\/\/[^\s"'<>]+$/.test(u) || !PHOTO_HOSTS.includes(new URL(u).hostname)) return null;
+  return u.replace(/(ichef\.bbci\.co\.uk\/ace\/standard\/)240\//, "$1480/"); // BBC 썸네일은 480px 판으로
+}
 export function parseRSS(xml, src) {
   return (xml.match(/<item[\s>][\s\S]*?<\/item>/gi) || []).map((x) => {
     const link = tag(x, "link") || (x.match(/<link[^>]*href="([^"]+)"/i) || [])[1] || "", t = Date.parse(tag(x, "pubDate") || tag(x, "dc:date"));
-    return { src, title: tag(x, "title"), link, t: isFinite(t) ? t : null };
+    return { src, title: tag(x, "title"), link, t: isFinite(t) ? t : null, img: photo(x) };
   }).filter((a) => a.title && /^https?:\/\//.test(a.link) && !NOISE.test(a.title));
 }
 export async function collect(fetchFn = fetch, now = Date.now(), maxAge = 3 * 864e5, keys = ["kr", "us"]) {

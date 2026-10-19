@@ -18,3 +18,4 @@
 - 시세: 토스 우선 → 실패/미등록 시 공개 시세(api/_lib/public.js: 네이버 국내 종목·지수, Yahoo 차트 미국). 토스는 허용 IP 미등록으로 403(Vercel 유동 IP).
 - 쟁점 분류 실데이터 점검: vote/은행/달러 단독 오분류 제거, 호르무즈·대이란·푸틴·젤렌스키·rate rises 추가.
 - 부팅: js/*.js 모듈 ~20개 개별 요청 → 하나라도 끊기면 "지면을 펼치는 중"에 멈춤(WebKit에서 재현). 이제 `npm run build`(esbuild) → dist/app.js 단일 번들, boot.js 가 data-app 으로 주입·실패 시 1회 자동 새로고침. **js/ 수정 후 반드시 npm run build + index.html dist 버전 올리기.**
+- 보도사진: RSS media:content/thumbnail(연합뉴스·BBC)만, PHOTO_HOSTS=CSP img-src 일치 필수. 1~3면 쟁점 사진 + 4면 '사진으로 보는 오늘'.

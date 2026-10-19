@@ -2,8 +2,8 @@
 // 분류는 제목 키워드 일치만 쓴다(기사 본문·감성 추정 없음). 근거 수치는 사이트 자료(월간)와 과거 사례에서만 계산한다.
 import * as K from "./risk.js";
 export const TOPICS = [
-  { id: "geo", page: 3, name: "전쟁·지정학", risk: "war", re: /\bwars?\b|missile|strike on|invasion|troops|military|nato|ukrain|russia|israel|gaza|\biran|hamas|hezbollah|taiwan|north korea|putin|zelensk|hormuz|전쟁|미사일|공습|침공|군사|휴전|우크라|러시아|이스라엘|가자|이란(?:의|은|이|과|산|군| 핵| 정부| 공격|·|,| ")|대이란|호르무즈|유조선|푸틴|젤렌스키|대만|북한|중동/i },
-  { id: "unrest", page: 3, name: "정치·시위·선거", risk: "unrest", re: /protest|riot|\bstrikes?\b|unrest|election|votes? (on|to)|referendum|impeach|\bcoup\b|parliament|government collapse|시위|파업|폭동|선거|투표|탄핵|쿠데타|의회|내각|총리|불신임/i },
+  { id: "geo", page: 3, name: "전쟁·지정학", risk: "war", re: /\bwars?\b|missile|strike on|invasion|troops|military|nato|ukrain|russia|israel|gaza|\biran|hamas|hezbollah|taiwan strait|blockade of taiwan|north korea|putin|zelensk|hormuz|전쟁|미사일|공습|침공|군사|휴전|우크라|러시아|이스라엘|가자|이란(?:의|은|이|과|산|군| 핵| 정부| 공격|·|,| ")|대이란|호르무즈|유조선|푸틴|젤렌스키|대만 ?(해협|총통|포위|봉쇄|침공|군사|경비함|국방)|양안|해경선|경비함|군함|북한|중동/i },
+  { id: "unrest", page: 3, name: "정치·시위·선거", risk: "unrest", re: /protest|riot|\bstrikes?\b|unrest|election|votes? (on|to)|referendum|impeach|\bcoup\b|parliament|government collapse|시위|파업|폭동|선거|투표|탄핵|쿠데타|의회 (해산|탄핵)|내각 (총사퇴|붕괴)|총리 (사퇴|불신임)|불신임/i },
   { id: "rates", page: 2, name: "금리·중앙은행", re: /\bfed\b|federal reserve|powell|rate cuts?|rate hikes?|rate rises?|interest rates?|treasury yield|bond yield|ecb|boj|bank of england|inflation|cpi|연준|금리|기준금리|한은|한국은행|국채|물가|인플레|파월|fomc/i },
   { id: "trade", page: 2, name: "무역·관세", risk: "policy", re: /tariff|trade war|trade deal|export control|sanction|wto|관세|무역|수출 ?규제|제재|통상/i },
   { id: "fin", page: 2, name: "금융·신용", risk: "fin", re: /bank (run|failure|collapse)|default|credit (crunch|crisis|spread|market)|bankrupt|insolven|liquidity (crunch|crisis)|bailout|private credit|junk bond|뱅크런|은행 ?(위기|파산|부실)|부도|디폴트|파산|유동성 위기|신용 ?(경색|위기|등급)|부실|후순위채|회사채|\bpf\b/i },

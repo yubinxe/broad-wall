@@ -114,7 +114,7 @@ test("투자 데스크: 체온계·신호 변경·리밸런싱 계산", async ()
 test("뉴스: RSS 파싱(CDATA·엔티티)·3일 초과 제외·중복 제거·실패 출처 표시", async () => {
   const N = await import("../api/news.js"), now = Date.parse("2026-10-17T06:00:00Z");
   const xml = `<rss><channel><item><title><![CDATA[코스피 &amp; 환율]]></title><link>https://a.kr/1</link><pubDate>Sat, 17 Oct 2026 13:48:39 +0900</pubDate></item><item><title>옛 기사</title><link>https://a.kr/2</link><pubDate>Mon, 27 Jan 2025 14:27:15 -0500</pubDate></item><item><title>[부고] 홍길동씨 별세</title><link>https://a.kr/3</link><pubDate>Sat, 17 Oct 2026 12:00:00 +0900</pubDate></item><item><title>링크 없음</title><pubDate>Sat, 17 Oct 2026 10:00:00 +0900</pubDate></item></channel></rss>`;
-  assert.deepEqual(N.parseRSS(xml, "X")[0], { src: "X", title: "코스피 & 환율", link: "https://a.kr/1", t: Date.parse("2026-10-17T04:48:39Z") });
+  assert.deepEqual(N.parseRSS(xml, "X")[0], { src: "X", title: "코스피 & 환율", link: "https://a.kr/1", t: Date.parse("2026-10-17T04:48:39Z"), img: null });
   const d = await N.collect(async (u) => (u.includes("ft.com") ? { ok: false, status: 403 } : { ok: true, text: async () => xml }), now);
   assert.equal(d.kr.length, 1, "중복·오래된 기사 제외"); assert.equal(d.kr[0].title, "코스피 & 환율");
   assert.ok(d.failed.some((f) => f.startsWith("Financial Times")));
@@ -183,4 +183,16 @@ test("공개 시세 대체: 토스 차단 시 네이버(국내)·Yahoo(미국)�
   assert.deepEqual(o.indicators.map((i) => [i.symbol, i.price]), [["KOSPI", 5635.45], ["KOSDAQ", 1100.1]]);
   assert.ok(o.errors.some((e) => /허용되지 않은 IP/.test(e)), "토스 차단 사유 표시"); assert.ok(o.errors.some((e) => /ZZZZ/.test(e)));
   assert.ok(!JSON.stringify(o).includes("secret-value-123"), "키 노출 없음");
+});
+
+test("보도사진: RSS 대표 사진만, 허용 호스트·https 만, BBC 480px", async () => {
+  const N = await import("../api/news.js");
+  assert.equal(N.photo('<item><media:content url="https://img.yna.co.kr/a/b_P2.jpg" type="image/jpeg"/></item>'), "https://img.yna.co.kr/a/b_P2.jpg");
+  assert.equal(N.photo('<item><media:thumbnail width="240" height="134" url="https://ichef.bbci.co.uk/ace/standard/240/x/y.jpg"/></item>'), "https://ichef.bbci.co.uk/ace/standard/480/x/y.jpg");
+  assert.equal(N.photo('<item><media:content url="http://img.yna.co.kr/a.jpg"/></item>'), null, "http 거부");
+  assert.equal(N.photo('<item><media:content url="https://evil.example/a.jpg"/></item>'), null, "허용 외 호스트 거부");
+  assert.equal(N.photo('<item><media:content url="https://img.yna.co.kr/a.jpg&quot; onerror=&quot;x"/></item>'), null, "속성 탈출 거부");
+  assert.equal(N.photo("<item><title>사진 없음</title></item>"), null);
+  const csp = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url))).headers.flatMap((h) => h.headers).find((h) => h.key === "Content-Security-Policy").value;
+  for (const h of N.PHOTO_HOSTS) assert.ok(csp.includes("https://" + h), "CSP img-src 에 " + h);
 });

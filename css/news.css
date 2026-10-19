@@ -138,3 +138,15 @@ ol.hl small { display: block; font: 500 11px var(--sans); color: var(--ink-3); m
 .pg-g > p { grid-column: 1 / -1; padding: 14px 0; }
 @media (max-width: 980px) { .pg-g { grid-template-columns: 1fr 1fr; } .pg-g > .story:nth-child(3n) { border-right: 1px solid var(--rule); } .pg-g > .story:nth-child(2n) { border-right: 0; } .pg-g > .story:nth-child(3n+1) { padding-left: 18px; } .pg-g > .story:nth-child(2n+1) { padding-left: 0; } }
 @media (max-width: 640px) { .pg-g { grid-template-columns: 1fr; } .pg-g > .story { padding: 14px 0; border-right: 0 !important; } }
+
+/* v9 — 보도사진(언론사 RSS 대표 사진) */
+.ph { margin: 0 0 10px; } .ph a { display: block; overflow: hidden; background: var(--paper-2); aspect-ratio: 16 / 9; }
+.ph img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(.15) contrast(1.02); transition: transform .4s ease; }
+.ph a:hover img { transform: scale(1.03); }
+.ph figcaption { font: 400 12.5px/1.5 var(--kr); color: var(--ink-2); margin-top: 6px; word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ph figcaption span { font: 500 11px var(--sans); color: var(--ink-3); margin-left: 4px; }
+.ph.big a { aspect-ratio: 3 / 2; } .ph.big figcaption { font-size: 13.5px; }
+.ph-g { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px 18px; padding: 18px 0 6px; }
+.ph-g .ph { margin: 0; } .ph-g > p { grid-column: 1 / -1; }
+@media (max-width: 980px) { .ph-g { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ph-g { grid-template-columns: 1fr 1fr; gap: 16px 12px; } }

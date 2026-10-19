@@ -36,6 +36,7 @@ export function lobby(el) {
   </aside></div>
   <section class="pg" id="p2" aria-label="2면 경제·증시"><h2 class="pg-h"><span>2면</span>경제 · 증시 <small>금리 · 무역 · 신용 · 원자재 · 반도체 · 환율</small></h2><div class="pg-g"><span class="spin"></span></div></section>
   <section class="pg" id="p3" aria-label="3면 국제·지정학"><h2 class="pg-h"><span>3면</span>국제 · 지정학 <small>전쟁 · 정치·시위 · 감염병</small></h2><div class="pg-g"><span class="spin"></span></div></section>
+  <section class="pg" id="p4" aria-label="사진으로 보는 오늘"><h2 class="pg-h"><span>4면</span>사진으로 보는 오늘 <small>연합뉴스 · BBC 보도사진 — 누르면 기사 원문</small></h2><div class="ph-g"><span class="spin"></span></div></section>
   <p class="cap">쟁점 분류는 언론사 RSS 제목의 키워드 일치로만 합니다. 판단 근거는 이 사이트의 월간 자료(미국 주식·10년 국채·금)와 과거 사례 계산이며 예측·투자 권유가 아닙니다. 기사 원문·저작권은 각 언론사에 있습니다.</p>
   </div>`;
   const newsP = fetch("/api/news?topic=all").then((r) => r.json());
@@ -58,18 +59,22 @@ export function lobby(el) {
     const act = tp.risk ? `<a href="#/risk" data-rt="${tp.risk}">리스크 상황실에서 내 비중 대입 →</a>` : `<a href="#/desk">투자 데스크 신호 확인 →</a>`;
     return `<div class="ins"><b class="ins-h">판단 근거</b><ul>${L.join("") || "<li>대응하는 과거 사례·지표가 없습니다. 규칙 신호가 바뀌었는지만 확인합니다.</li>"}</ul><p class="ins-a">${act}</p></div>`;
   };
-  const story = (tp, n, cnt = tp.items.length) => `<article class="story"><h3>${esc(tp.name)} <small>기사 ${cnt}건</small></h3>
-    <ol class="hl">${tp.items.slice(0, n).map((a) => `<li><a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">${esc(a.title)}</a><small>${esc(a.src)} · ${a.t ? ago(a.t) : ""}</small></li>`).join("")}</ol>${insight(tp)}</article>`;
+  const pic = (a, cls = "") => `<figure class="ph ${cls}"><a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer"><img class="ph-i" src="${esc(a.img)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a><figcaption>${esc(a.title)} <span>사진·기사 ${esc(a.src)}</span></figcaption></figure>`;
+  const story = (tp, n, cnt = tp.items.length, big = false) => { const ph = tp.items.find((a) => a.img); return `<article class="story"><h3>${esc(tp.name)} <small>기사 ${cnt}건</small></h3>${ph ? pic(ph, big ? "big" : "") : ""}
+    <ol class="hl">${tp.items.slice(0, n).map((a) => `<li><a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">${esc(a.title)}</a><small>${esc(a.src)} · ${a.t ? ago(a.t) : ""}</small></li>`).join("")}</ol>${insight(tp)}</article>`; };
   const fill = (id, list, empty) => { el.querySelector(`#${id} .pg-g`).innerHTML = list.length ? list.map((tp) => story(tp, 4)).join("") : `<p class="muted small">${empty}</p>`; };
   newsP.then((j) => {
     const all = T.classify([...(j.kr || []), ...(j.us || []), ...(j.world || [])]), top = all[0], rest = all.slice(1);
-    el.querySelector("#p1").innerHTML = top ? `<p class="kicker">1면 · 오늘의 쟁점 · 헤드라인 ${all.reduce((s, x) => s + x.items.length, 0)}건 중 최다</p><h1 class="hed">${esc(top.name)}</h1><p class="dek">${esc(top.items[0].title)} <small class="muted">— ${esc(top.items[0].src)}</small></p>${story({ ...top, items: top.items.slice(1).length ? top.items.slice(1) : top.items }, 6, top.items.length).replace('<article class="story"><h3>', '<article class="story lead-s"><h3 class="sr">')}` : `<p class="kicker">1면 · 오늘의 쟁점</p><p class="muted">분류할 헤드라인이 없습니다.</p>`;
+    el.querySelector("#p1").innerHTML = top ? `<p class="kicker">1면 · 오늘의 쟁점 · 헤드라인 ${all.reduce((s, x) => s + x.items.length, 0)}건 중 최다</p><h1 class="hed">${esc(top.name)}</h1><p class="dek">${esc(top.items[0].title)} <small class="muted">— ${esc(top.items[0].src)}</small></p>${story({ ...top, items: top.items.slice(1).length ? top.items.slice(1) : top.items }, 6, top.items.length, true).replace('<article class="story"><h3>', '<article class="story lead-s"><h3 class="sr">')}` : `<p class="kicker">1면 · 오늘의 쟁점</p><p class="muted">분류할 헤드라인이 없습니다.</p>`;
     fill("p2", rest.filter((x) => x.page === 2), "현재 경제·증시 쟁점으로 분류된 헤드라인이 없습니다.");
     fill("p3", rest.filter((x) => x.page === 3), "현재 국제·지정학 쟁점으로 분류된 헤드라인이 없습니다.");
     if (j.failed?.length) el.querySelector("#p3").insertAdjacentHTML("beforeend", `<p class="cap">응답 없는 출처: ${esc(j.failed.join(", "))}</p>`);
+    const seen = new Set(), photos = [...(j.kr || []), ...(j.world || []), ...(j.us || [])].filter((a) => a.img && !seen.has(a.img) && seen.add(a.img)).sort((a, b) => b.t - a.t).slice(0, 12);
+    el.querySelector("#p4 .ph-g").innerHTML = photos.length ? photos.map((a) => pic(a)).join("") : '<p class="muted small">지금 실린 보도사진이 없습니다.</p>';
+    el.querySelectorAll("img.ph-i").forEach((i) => (i.onerror = () => i.closest("figure")?.remove())); // 원본이 내려가면 칸째 뺀다
     el.querySelectorAll("[data-live]").forEach(live);
     el.querySelectorAll("[data-rt]").forEach((a) => (a.onclick = () => { settings.riskType = a.dataset.rt; saveSettings(); }));
-  }).catch(() => { el.querySelector("#p1").innerHTML = '<p class="kicker">1면 · 오늘의 쟁점</p><p class="muted">뉴스 서버 응답 없음(정적 미리보기).</p>'; ["p2", "p3"].forEach((id) => (el.querySelector(`#${id} .pg-g`).innerHTML = "")); });
+  }).catch(() => { el.querySelector("#p1").innerHTML = '<p class="kicker">1면 · 오늘의 쟁점</p><p class="muted">뉴스 서버 응답 없음(정적 미리보기).</p>'; ["p2", "p3"].forEach((id) => (el.querySelector(`#${id} .pg-g`).innerHTML = "")); el.querySelector("#p4 .ph-g").innerHTML = ""; });
   brief(el.querySelector("#brief"), newsP);
 }
 lobby.title = "1면";
