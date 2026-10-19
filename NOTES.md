@@ -10,3 +10,8 @@
 - 빈 화면(Safari) 원인: 첫 화면 View Transition 정지 → 첫 렌더는 전환 없이 그림 + js/boot.js 오류 표시.
 - 섹션: 돈의 흐름(#/flows, 보고서 수치 미검증 → 링크만), 리스크 상황실(#/risk, js/risk.js 사건 17건 · 사건 기간/이후 6·12개월 반응 · 3갈래 시나리오), 뉴스 api/news?topic=world.
 - 미해결: 시세 월간·지연(토스 키 등록 시 현재가).
+
+## 2026-10-19
+- 일반 창 오류 대응: core.sanitize(저장 설정 정화) · 라우트 try/catch 오류면+설정 초기화(원장 보존) · boot.js 는 이 사이트 스크립트 오류만 표시(확장 프로그램 오류 무시) · js/css/index no-cache.
+- 1면 개편: 에세이 삭제 → 1면 쟁점/2면 경제·증시/3면 국제·지정학(js/topics.js 키워드 분류 + 판단 근거). /api/news?topic=all.
+- Toss 키: Vercel sensitive env(TOSS_CLIENT_ID/SECRET). 채팅 노출 → 재발급 권고.

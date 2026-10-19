@@ -140,3 +140,26 @@ test("리스크 상황실: 사례 반응·요약·시나리오 계산", async ()
   assert.ok(sc[2].ret <= sc[1].ret && sc[1].ret <= sc[0].ret);
   assert.ok(Math.abs(sc[1].ret - (0.6 * s.during.EQ.med + 0.4 * s.during.BD.med)) < 1e-12);
 });
+
+test("저장 설정 정화: 깨진·옛 형식 값이 들어와도 기본값으로 복구", async () => {
+  const { sanitize } = await import("../js/core.js"), Q = await import("../js/quant.js");
+  for (const raw of [null, "x", [], 5, { costs: "bad", answers: [1], strategy: "nope", mask: "yes" }, { costs: { costBps: "abc", rebalance: "weekly", capital: -1, band: 0 } }]) {
+    const s = sanitize(raw);
+    assert.deepEqual(Object.keys(s.costs).sort(), Object.keys(Q.DEFAULT_COSTS).sort());
+    for (const [k, v] of Object.entries(s.costs)) assert.ok(k === "rebalance" ? ["monthly", "quarterly", "annual", "band"].includes(v) : Number.isFinite(v) && v >= 0, k);
+    assert.ok(s.costs.capital > 0 && s.costs.band > 0); assert.equal(s.strategy, null); assert.equal(typeof s.answers, "object"); assert.ok(!Array.isArray(s.answers));
+  }
+  const ok = sanitize({ costs: { costBps: 20 }, strategy: "trend", answers: { q1: 3, q2: "x" }, mask: true });
+  assert.equal(ok.costs.costBps, 20); assert.equal(ok.costs.slipBps, Q.DEFAULT_COSTS.slipBps); assert.equal(ok.strategy, "trend"); assert.deepEqual(ok.answers, { q1: 3 }); assert.equal(ok.mask, true);
+});
+
+test("쟁점 분류: 키워드 일치·단어 경계·중복 제거·과거 사례 연결", async () => {
+  const T = await import("../js/topics.js"), Q = await import("../js/quant.js");
+  const items = [{ title: "Fed holds rates steady", t: 3 }, { title: "연준 금리 동결 시사", t: 2 }, { title: "Iran missile strike", t: 1 }, { title: "Software award warns users", t: 1 }, { title: "행복이란 무엇인가", t: 1 }, { title: "Fed holds rates steady", t: 3 }];
+  const g = T.classify(items);
+  assert.deepEqual(g.map((x) => [x.id, x.items.length]), [["rates", 2], ["geo", 1]]);
+  const D = Q.prepare(JSON.parse(readFileSync(new URL("../data/market.json", import.meta.url))));
+  const a = T.analog(D, T.TOPICS.find((x) => x.id === "geo")); assert.ok(a.rows.length >= 5 && a.rows.every((r) => r.type === "war"));
+  assert.equal(T.analog(D, T.TOPICS.find((x) => x.id === "rates")), null);
+  assert.equal(T.analog(D, T.TOPICS.find((x) => x.id === "oil")).rows.length, 4);
+});

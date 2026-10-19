@@ -121,3 +121,20 @@ ol.hl small { display: block; font: 500 11px var(--sans); color: var(--ink-3); m
 .bf-add { display: flex; gap: 6px; margin-top: 8px; } .bf-add input { flex: 1; min-width: 0; font: 500 13px var(--mono); padding: 7px 9px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
 @media (max-width: 980px) { .brief { grid-template-columns: 1fr 1fr; } .bf-now { grid-column: 1 / -1; border-right: 0; padding-right: 0; border-bottom: 1px solid var(--rule); } .bf-col:nth-child(2) { padding-left: 0; } }
 @media (max-width: 640px) { .brief { grid-template-columns: 1fr; } .bf-col { padding: 14px 0; border-right: 0; border-bottom: 1px solid var(--rule); } }
+
+/* v8 — 1면 쟁점 · 2면 경제·증시 · 3면 국제·지정학 + 판단 근거 */
+.lead .hed { margin-top: 4px; } .lead .dek small { font-size: 12px; }
+.story h3 { font: 900 19px/1.3 var(--kr); margin: 0 0 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.story h3 small { font: 500 11px var(--sans); color: var(--ink-3); }
+.ins { margin-top: 12px; padding: 12px 14px; background: var(--paper-2); border-left: 3px solid var(--ink); font: 400 14px/1.65 var(--kr); word-break: keep-all; }
+.ins-h { font: 700 11px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.ins ul { margin: 6px 0 0; padding-left: 18px; } .ins li { margin: 3px 0; } .ins-a { margin: 8px 0 0; font-weight: 700; }
+.pg { margin-top: 40px; border-top: 3px double var(--ink); }
+.pg-h { font: 900 22px var(--kr); margin: 0; padding: 12px 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--ink); }
+.pg-h span { font: 400 30px/1 var(--black); } .pg-h small { font: 500 12px var(--sans); color: var(--ink-3); }
+.pg-g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pg-g > .story { padding: 16px 18px 20px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); min-width: 0; }
+.pg-g > .story:nth-child(3n) { border-right: 0; } .pg-g > .story:nth-child(3n+1) { padding-left: 0; }
+.pg-g > p { grid-column: 1 / -1; padding: 14px 0; }
+@media (max-width: 980px) { .pg-g { grid-template-columns: 1fr 1fr; } .pg-g > .story:nth-child(3n) { border-right: 1px solid var(--rule); } .pg-g > .story:nth-child(2n) { border-right: 0; } .pg-g > .story:nth-child(3n+1) { padding-left: 18px; } .pg-g > .story:nth-child(2n+1) { padding-left: 0; } }
+@media (max-width: 640px) { .pg-g { grid-template-columns: 1fr; } .pg-g > .story { padding: 14px 0; border-right: 0 !important; } }

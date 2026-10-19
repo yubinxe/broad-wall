@@ -2,7 +2,7 @@
 import * as Q from "./quant.js";
 import * as C from "./charts.js";
 import * as V from "./vault.js";
-import { $, $$, D, setMarket, esc } from "./core.js";
+import { $, $$, D, setMarket, esc, resetPrefs } from "./core.js";
 import { lobby, profile, strategies } from "./screens/home.js";
 import { backtest, models, scenario } from "./screens/analysis.js";
 import { portfolio } from "./screens/private.js";
@@ -72,13 +72,23 @@ function route() {
   $$("nav.main a").forEach((a) => (a.dataset.r === name ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
   $("#nav").classList.remove("open");
   document.body.dataset.route = ROUTES[name] ? name : "";
-  const draw = () => { main.innerHTML = ""; fn(main, arg); edit(main, name); scrollTo({ top: 0 }); document.title = (fn.title || "1면") + " — BROAD & WALL"; };
+  const draw = () => {
+    main.innerHTML = ""; document.title = (fn.title || "1면") + " — BROAD & WALL"; scrollTo({ top: 0 });
+    try { fn(main, arg); edit(main, name); } catch (e) { console.error(e); fail(main, e); }
+  };
   // 첫 화면은 전환 효과 없이 바로 그린다(Safari 초기 렌더 보호). 이후에도 전환 실패 시 즉시 그린다.
   if (!route.done || !document.startViewTransition) { draw(); route.done = true; return; }
   try { const vt = document.startViewTransition(draw); vt.finished?.catch(() => {}); vt.ready?.catch(() => {}); } catch { draw(); }
 }
 
 
+// 화면 하나가 실패해도 앱 전체가 멈추지 않게 — 원인과 설정 초기화 버튼을 보여 준다(원장은 보존)
+function fail(main, e) {
+  main.innerHTML = `<div class="wrap page"><p class="kicker">오류</p><h1>이 면을 그리지 못했습니다</h1><p class="note warn">${esc(e?.message || e)}</p>
+  <p>이 브라우저에 남은 이전 버전의 화면 설정이 원인일 수 있습니다. 아래 버튼은 화면 설정·관심종목·밝기만 지우고 <b>암호화 원장은 지우지 않습니다</b>.</p>
+  <p><button class="btn" id="rst">화면 설정 초기화 후 다시 열기</button> <a class="btn ghost" href="#/">1면으로</a></p></div>`;
+  $("#rst", main).onclick = () => { resetPrefs(); location.replace(location.pathname + "?r=" + Date.now() + location.hash); };
+}
 function edit(main, name) { // 섹션 문구 교체(첫 kicker · h1 · lede)
   const c = COPY[name]; if (!c) return; const [k, h, l] = c, put = (sel, v) => { const e = main.querySelector(sel); if (e && v) e.textContent = v; };
   put(".kicker", k); put("h1", h); put(".lede", l);

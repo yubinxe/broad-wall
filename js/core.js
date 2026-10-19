@@ -6,7 +6,18 @@ import * as C from "./charts.js";
 export const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const SKEY = "meridian.v2.settings";
-export const settings = Object.assign({ costs: { ...Q.DEFAULT_COSTS }, answers: {}, strategy: null, mask: false }, (() => { try { return JSON.parse(localStorage.getItem(SKEY)) || {}; } catch { return {}; } })());
+// 저장된 설정은 버전이 달라도 깨지지 않게 형식을 검사해 받아들인다(일반 브라우저 오류 방지)
+const RB = ["monthly", "quarterly", "annual", "band"];
+export function sanitize(raw) {
+  const o = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}, d = Q.DEFAULT_COSTS, c = o.costs && typeof o.costs === "object" ? o.costs : {};
+  const costs = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, k === "rebalance" ? (RB.includes(c[k]) ? c[k] : v) : Number.isFinite(Number(c[k])) && c[k] !== "" && c[k] != null && Number(c[k]) >= 0 ? Number(c[k]) : v]));
+  if (costs.capital < 1) costs.capital = d.capital; if (!(costs.band > 0)) costs.band = d.band;
+  const answers = o.answers && typeof o.answers === "object" && !Array.isArray(o.answers) ? Object.fromEntries(Object.entries(o.answers).filter(([, v]) => Number.isFinite(v))) : {};
+  return { ...o, costs, answers, strategy: Q.STRATEGIES[o.strategy] ? o.strategy : null, mask: o.mask === true, riskType: typeof o.riskType === "string" ? o.riskType : undefined };
+}
+export const settings = sanitize((() => { try { return JSON.parse(localStorage.getItem(SKEY)); } catch { return null; } })());
+// 화면 설정만 지운다(암호화 원장 meridian.v2.vault 는 보존)
+export const resetPrefs = () => { for (const k of [SKEY, "meridian.v2.watch", "meridian.v2.theme"]) try { localStorage.removeItem(k); } catch {} };
 export const saveSettings = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch {} };
 export let market, D; export const cache = new Map();
 export function setMarket(m) { market = m; D = Q.prepare(m); }

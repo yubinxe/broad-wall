@@ -4,59 +4,73 @@ import * as C from "../charts.js";
 import { $, $$, esc, settings, saveSettings, market, D, cache, run, bench, profileResult, currentWeights, norm, costForm, bindCost, refresh } from "../core.js";
 import * as R from "../profile.js";
 import * as V from "../vault.js";
-import { skyline } from "../art.js";
 import { thermometer } from "../desk.js";
 import { brief } from "../brief.js";
+import * as T from "../topics.js";
 
-// ── 1면 (로비) — 신문 1면 문법: 제호 · 날짜선 · 머리기사 · 사진 · 3단 본문 · 우측 단신 · 차례 ──
+// ── 1면 (로비) — 브리핑 · 1면 오늘의 쟁점 · 2면 경제·증시 · 3면 국제·지정학. 쟁점마다 판단 근거(과거 사례·지표)를 붙인다 ──
+const ago = (t) => { const m = Math.round((Date.now() - t) / 6e4); return m < 60 ? `${Math.max(m, 1)}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
 export function lobby(el) {
-  const eq = Q.metrics(bench().rets), t = D.dates.length - 1, v = Q.viewAt(D, t), y0 = D.dates[0].slice(0, 4), span = Number(D.end.slice(0, 4)) - Number(y0);
-  const tr = run("trend"), te = Q.splitMetrics(tr.bt, bench())[2].m, N = tr.sel.best.N, prof = profileResult();
-  const done = { profile: prof.complete, strategies: !!settings.strategy, backtest: !!settings.strategy, models: !!settings.seenModels, scenario: !!settings.seenScenario, portfolio: V.exists() };
+  const t = D.dates.length - 1, v = Q.viewAt(D, t);
   const today = new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" }).format(new Date());
   const ch = (a) => D.px[a][t] / D.px[a][t - 1] - 1, cls = (x) => (x >= 0 ? "pos" : "neg"), th = thermometer(D, market);
   el.innerHTML = `<div class="wrap front">
-  <div class="dateline"><span>제1권 · 제${D.end.replace("-", "")}호</span><span>뉴욕 · 서울 &nbsp;|&nbsp; ${today}</span><span>월간판 · ${D.end} 자료 기준</span></div>
+  <div class="dateline"><span>제1권 · 제${D.end.replace("-", "")}호</span><span>뉴욕 · 서울 &nbsp;|&nbsp; ${today}</span><span>시세 실시간 · 지표 ${D.end} 월간</span></div>
   <section class="brief" id="brief" aria-label="오늘의 브리핑"></section>
-  <div class="fp"><article class="lead">
-    <p class="kicker">머리기사 · 퀀트 데스크</p>
-    <h1 class="hed">${span}년의 시장이 남긴 교훈,<br>규칙은 감정보다 오래 살아남는다</h1>
-    <p class="dek">S&amp;P 500은 ${y0}년 이후 연 ${C.pctU(eq.cagr)}씩 불어났다. 그러나 그 길 위에는 ${C.pct(eq.mdd)}의 낙폭이 있었다. 이 지면은 예측 대신 규칙으로 그 낙폭을 다루는 법을, 거래비용과 세금까지 빼고 검증한다.</p>
-    <div class="byline"><span>BROAD &amp; WALL 퀀트 데스크</span><span>${D.dates.length}개월 공개 자료 · 투자 권유 아님</span></div>
-    <figure class="plate"><div class="img">${skyline()}</div><figcaption>해질녘의 로어 맨해튼(일러스트). 1792년 5월, 중개인 24명이 월가 68번지 앞 버튼우드 나무 아래에서 맺은 협약이 뉴욕증권거래소의 출발점이 됐다.</figcaption></figure>
-    <div class="cols">
-      <p class="dc">월스트리트의 오래된 격언은 시장을 이기려 하지 말고 시장에 남아 있으라고 말한다. 문제는 남아 있는 일이 생각보다 어렵다는 데 있다. 이 지면의 모든 숫자는 ${D.dates[0]}부터 ${D.end}까지 ${D.dates.length}개월의 공개 자료로 계산했고, 수수료와 슬리피지, 해외주식 양도소득세를 뺀 뒤의 결과다.</p>
-      <p>가장 단순한 추세 규칙은 이렇다. 주식과 금이 ${N}개월 이동평균 아래로 내려가면 그 몫을 채권으로 옮긴다. 이 규칙은 한 번도 들여다보지 않은 ${Q.SPLITS[2].from.slice(0, 4)}년 이후 시험 구간에서 연 ${C.pctU(te.cagr)}, 최대낙폭 ${C.pct(te.mdd)}를 기록했다. 파라미터는 1999년까지의 자료로만 골랐다.</p>
-      <blockquote class="pull">“시장을 예측하지 않는다. 규칙을 세우고, 그 규칙이 틀린 날까지 기록한다.”</blockquote>
-      <p>다섯 개의 예측 모델도 같은 조건으로 시험대에 올렸다. 매년 1월, 그때까지의 자료로만 다시 학습시키는 방식이다. 기준선을 넘지 못한 결과도 지우지 않고 D면에 실었다.</p>
-      <p>독자의 보유 자산은 이 지면에 실리지 않는다. 비공개 원장은 이 기기 안에서만 암호화되고, 공개면에는 비중과 규칙만 오른다. 시세는 실시간이 아닌 월간 자료다.</p>
-      <p class="go"><a href="#/desk">이번 달 투자 데스크 보기 →</a> &nbsp; <a href="#/profile">A면 · 투자성향 진단 →</a></p>
-    </div>
-  </article>
+  <div class="fp"><article class="lead" id="p1" aria-label="1면 오늘의 쟁점"><p class="kicker">1면 · 오늘의 쟁점</p><span class="spin"></span></article>
   <aside class="rail">
-    <h4>시장 요약 <small>월간 · 지연</small></h4>
+    <h4>시장 요약 <small>월간 · ${D.end}</small></h4>
     <table class="mkt"><tbody>
       <tr><td>S&amp;P 500</td><td>${D.px.EQ[t].toLocaleString("en-US", { maximumFractionDigits: 0 })} <b class="${cls(ch("EQ"))}">${C.pct(ch("EQ"))}</b></td></tr>
       <tr><td>금 ($/oz)</td><td>${D.px.GD[t].toLocaleString("en-US", { maximumFractionDigits: 0 })} <b class="${cls(ch("GD"))}">${C.pct(ch("GD"))}</b></td></tr>
       <tr><td>미 국채 10년</td><td>${D.y10[t].toFixed(2)}%</td></tr>
       <tr><td>미 CPI 전년비</td><td>${C.pctU(v.cpi(t - 1) / v.cpi(t - 13) - 1)} <small>(${D.dates[t - 1]})</small></td></tr>
-      <tr><td>S&amp;P 12개월</td><td class="${cls(v.cumRet("EQ", 12))}">${C.pct(v.cumRet("EQ", 12))}</td></tr>
     </tbody></table>
-    <h4 style="margin-top:26px">이번 달 규칙 신호 <small>${D.end} 말</small></h4>
-    <table class="mkt sig"><thead><tr><td></td><td>주식 · 채권 · 금</td></tr></thead><tbody>
+    <h4 style="margin-top:22px">이번 달 규칙 신호 <small>주식·채권·금</small></h4>
+    <table class="mkt sig"><tbody>
     ${Object.keys(Q.STRATEGIES).filter((k) => k !== "eq").map((k) => { const w = norm(currentWeights(k)); return `<tr><td><a href="#/backtest/${k}">${Q.STRATEGIES[k].name}</a></td><td>${[w.EQ, w.BD, w.GD].map((x) => Math.round(x * 100)).join(" · ")}</td></tr>`; }).join("")}
     </tbody></table>
     <div class="deskbox"><h4>투자 데스크 <small>이번 달 점검</small></h4>
     <ul><li>S&amp;P 500 고점 대비 <b>${th.now.dd > -0.0005 ? "최고치" : C.pct(th.now.dd)}</b></li><li>주식 추세 <b class="${cls(th.now.trendEQ)}">${th.now.trendEQ >= 0 ? "10개월선 위" : "10개월선 아래"}</b></li><li>실질금리 <b>${C.pct(th.now.real, 2)}</b></li><li>12개월 수익 1위 <b>${Q.ASSET_LABEL[th.rank[0]]}</b></li></ul>
-    <a class="btn sm" href="#/desk">리밸런싱 주문서 열기 →</a> <a class="btn sm ghost" href="#/flows" style="margin-top:6px">돈의 흐름 →</a> <a class="btn sm ghost" href="#/risk" style="margin-top:6px">리스크 상황실 →</a></div>
-    <h4 style="margin-top:26px">공개면 안내</h4>
-    <p class="brief"><a href="#/public">모델 포트폴리오 증서</a> — 금액 없이 비중과 규칙만 공개한다. 실제 자산과는 분리돼 있다.</p>
-    <p class="brief"><a href="#/connect">증권사 연결 현황</a> — 확인된 범위만 쓴다. 연결되지 않은 계좌는 연결됐다고 쓰지 않는다.</p>
+    <a class="btn sm" href="#/desk">리밸런싱 주문서 →</a> <a class="btn sm ghost" href="#/risk" style="margin-top:6px">리스크 상황실 →</a></div>
   </aside></div>
-  <h2 class="idx-h">이번 호 차례</h2>
-  <nav class="index" aria-label="섹션 차례">${[["profile", "A", "투자성향", "여덟 개의 질문으로 감내할 낙폭을 정한다"], ["strategies", "B", "전략 편람", "여섯 개 규칙의 성적과 적합 여부"], ["backtest", "C", "검증 보고서", "학습 · 검증 · 시험 구간을 나눠 본 결과"], ["models", "D", "예측 실험실", "다섯 모델과 기준선의 정직한 비교"], ["scenario", "E", "위기의 기록", "오일쇼크부터 금리 급등까지 대입"], ["portfolio", "F", "비공개 원장", "이 기기에서만 열리는 내 포트폴리오"]].map(([h, s, t2, d]) => `<a href="#/${h}"><span class="sl">${s}</span><b>${t2}${done[h] ? ' <i class="pos">✓</i>' : ""}</b><span>${d}</span></a>`).join("")}</nav>
+  <section class="pg" id="p2" aria-label="2면 경제·증시"><h2 class="pg-h"><span>2면</span>경제 · 증시 <small>금리 · 무역 · 신용 · 원자재 · 반도체 · 환율</small></h2><div class="pg-g"><span class="spin"></span></div></section>
+  <section class="pg" id="p3" aria-label="3면 국제·지정학"><h2 class="pg-h"><span>3면</span>국제 · 지정학 <small>전쟁 · 정치·시위 · 감염병</small></h2><div class="pg-g"><span class="spin"></span></div></section>
+  <p class="cap">쟁점 분류는 언론사 RSS 제목의 키워드 일치로만 합니다. 판단 근거는 이 사이트의 월간 자료(미국 주식·10년 국채·금)와 과거 사례 계산이며 예측·투자 권유가 아닙니다. 기사 원문·저작권은 각 언론사에 있습니다.</p>
   </div>`;
-  brief(el.querySelector("#brief"));
+  const newsP = fetch("/api/news?topic=all").then((r) => r.json());
+  let quotes = null; const onQ = (e) => { quotes = e.detail; el.querySelectorAll("[data-live]").forEach(live); };
+  const root = el.firstElementChild; addEventListener("bw:quotes", onQ); new MutationObserver((_, o) => { if (!root.isConnected) { removeEventListener("bw:quotes", onQ); o.disconnect(); } }).observe(el, { childList: true });
+  const live = (n) => { // 시세 응답이 오면 환율·관심종목 칸을 채운다
+    if (!quotes) return; const k = n.dataset.live;
+    if (k === "fx") { const r = quotes.fx?.rates || {}; n.innerHTML = r.KRW ? `원/달러 <b>${r.KRW.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}</b> · 엔/달러 <b>${r.JPY?.toFixed(2) ?? "—"}</b> <small>(ECB ${esc(quotes.fx.date || "")})</small>` : "환율 응답 없음"; }
+    if (k === "wl") { const ps = (quotes.prices || []).slice(0, 5); n.innerHTML = ps.length ? ps.map((p) => `${esc(p.symbol)} <b>${Number(p.price).toLocaleString("en-US", { maximumFractionDigits: 2 })}</b>`).join(" · ") : quotes.live ? "관심종목 시세 없음" : '관심종목 현재가는 <a href="#/connect">토스증권 연결</a> 후 표시'; }
+  };
+  const S = (r) => (r == null ? "—" : C.pct(r));
+  const insight = (tp) => { // 쟁점별 판단 근거 — 수치는 모두 사이트 자료에서 계산
+    const L = [], an = T.analog(D, tp);
+    if (an) { const s = an.sum, up = s.after12.EQ; L.push(`<li><b>과거 비슷한 사건 ${an.rows.length}건</b> — 사건 기간 S&amp;P 500 중앙값 <b class="${cls(s.during.EQ.med)}">${S(s.during.EQ.med)}</b>(최악 ${S(s.during.EQ.worst)}), 채권 ${S(s.during.BD.med)}, 금 ${S(s.during.GD.med)}. 종료 12개월 뒤 주식이 오른 경우 ${up.n ? `${Math.round(up.up * up.n)}/${up.n}건` : "—"}(중앙값 ${S(up.med)}).</li>`); }
+    if (tp.id === "rates") L.push(`<li><b>금리 위치</b> — 미 10년 ${C.pctU(th.now.y10, 2)}, 실질금리 ${C.pct(th.now.real, 2)}(1974년 이후 상위 ${Math.round((1 - th.pct.real) * 100)}%). 채권 12개월 ${S(th.mom.BD)}.</li>`);
+    if (["chips", "trade", "rates", "fin"].includes(tp.id)) L.push(`<li><b>주식 체력</b> — S&amp;P 500 10개월선 ${th.now.trendEQ >= 0 ? "위" : "아래"}(${S(th.now.trendEQ)}), 고점 대비 ${th.now.dd > -0.0005 ? "최고치" : S(th.now.dd)}, 12개월 변동성 과거 ${Math.round(th.pct.vol * 100)}분위.</li>`);
+    if (tp.id === "oil") L.push(`<li><b>원자재 연동</b> — 금 10개월선 ${th.now.trendGD >= 0 ? "위" : "아래"}(${S(th.now.trendGD)}), 미 CPI 전년비 ${C.pctU(th.now.infl)}. 유가 충격은 물가→금리 경로로 채권에도 번진다.</li>`);
+    if (tp.id === "fx") L.push(`<li data-live="fx">환율 불러오는 중…</li><li><b>원화 투자자</b> — 달러 강세는 해외자산 원화 평가액을 올리고, 새로 사는 달러 자산은 비싸게 만든다. 환전은 나눠서.</li>`);
+    if (tp.id === "chips") L.push(`<li data-live="wl">관심종목 불러오는 중…</li>`);
+    const act = tp.risk ? `<a href="#/risk" data-rt="${tp.risk}">리스크 상황실에서 내 비중 대입 →</a>` : `<a href="#/desk">투자 데스크 신호 확인 →</a>`;
+    return `<div class="ins"><b class="ins-h">판단 근거</b><ul>${L.join("") || "<li>대응하는 과거 사례·지표가 없습니다. 규칙 신호가 바뀌었는지만 확인합니다.</li>"}</ul><p class="ins-a">${act}</p></div>`;
+  };
+  const story = (tp, n, cnt = tp.items.length) => `<article class="story"><h3>${esc(tp.name)} <small>기사 ${cnt}건</small></h3>
+    <ol class="hl">${tp.items.slice(0, n).map((a) => `<li><a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">${esc(a.title)}</a><small>${esc(a.src)} · ${a.t ? ago(a.t) : ""}</small></li>`).join("")}</ol>${insight(tp)}</article>`;
+  const fill = (id, list, empty) => { el.querySelector(`#${id} .pg-g`).innerHTML = list.length ? list.map((tp) => story(tp, 4)).join("") : `<p class="muted small">${empty}</p>`; };
+  newsP.then((j) => {
+    const all = T.classify([...(j.kr || []), ...(j.us || []), ...(j.world || [])]), top = all[0], rest = all.slice(1);
+    el.querySelector("#p1").innerHTML = top ? `<p class="kicker">1면 · 오늘의 쟁점 · 헤드라인 ${all.reduce((s, x) => s + x.items.length, 0)}건 중 최다</p><h1 class="hed">${esc(top.name)}</h1><p class="dek">${esc(top.items[0].title)} <small class="muted">— ${esc(top.items[0].src)}</small></p>${story({ ...top, items: top.items.slice(1).length ? top.items.slice(1) : top.items }, 6, top.items.length).replace('<article class="story"><h3>', '<article class="story lead-s"><h3 class="sr">')}` : `<p class="kicker">1면 · 오늘의 쟁점</p><p class="muted">분류할 헤드라인이 없습니다.</p>`;
+    fill("p2", rest.filter((x) => x.page === 2), "현재 경제·증시 쟁점으로 분류된 헤드라인이 없습니다.");
+    fill("p3", rest.filter((x) => x.page === 3), "현재 국제·지정학 쟁점으로 분류된 헤드라인이 없습니다.");
+    if (j.failed?.length) el.querySelector("#p3").insertAdjacentHTML("beforeend", `<p class="cap">응답 없는 출처: ${esc(j.failed.join(", "))}</p>`);
+    el.querySelectorAll("[data-live]").forEach(live);
+    el.querySelectorAll("[data-rt]").forEach((a) => (a.onclick = () => { settings.riskType = a.dataset.rt; saveSettings(); }));
+  }).catch(() => { el.querySelector("#p1").innerHTML = '<p class="kicker">1면 · 오늘의 쟁점</p><p class="muted">뉴스 서버 응답 없음(정적 미리보기).</p>'; ["p2", "p3"].forEach((id) => (el.querySelector(`#${id} .pg-g`).innerHTML = "")); });
+  brief(el.querySelector("#brief"), newsP);
 }
 lobby.title = "1면";
 

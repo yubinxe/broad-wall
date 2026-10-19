@@ -43,7 +43,7 @@ export async function collect(fetchFn = fetch, now = Date.now(), maxAge = 3 * 86
   return out;
 }
 export default async function handler(req, res) {
-  const d = await collect(fetch, Date.now(), 3 * 864e5, req.query?.topic === "world" ? ["world"] : ["kr", "us"]);
+  const d = await collect(fetch, Date.now(), 3 * 864e5, ({ world: ["world"], all: ["kr", "us", "world"] })[req.query?.topic] || ["kr", "us"]);
   res.setHeader("cache-control", "public, s-maxage=900, stale-while-revalidate=1800");
   res.status(200).json({ fetched_at: new Date().toISOString(), note: "언론사 공식 RSS — 제목·링크만 표시", ...d });
 }
