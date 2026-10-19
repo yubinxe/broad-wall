@@ -5,6 +5,7 @@ const load = () => { try { const v = JSON.parse(localStorage.getItem(KEY)); retu
 const save = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch {} };
 const ago = (t) => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
 const fmt = (v, ccy) => (v == null ? "—" : ccy === "KRW" || ccy == null && v > 1000 ? Math.round(v).toLocaleString("ko-KR") : v.toLocaleString("en-US", { maximumFractionDigits: 2 }));
+const chg = (p) => (p?.chg == null ? "" : ` <b class="${p.chg >= 0 ? "pos" : "neg"}">${p.chg >= 0 ? "+" : ""}${(p.chg * 100).toFixed(2)}%</b>`);
 const news = (list) => (list.length ? `<ol class="hl">${list.slice(0, 8).map((a) => `<li><a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">${esc(a.title)}</a><small>${esc(a.src)} · ${ago(a.t)}</small></li>`).join("")}</ol>` : `<p class="muted small">헤드라인을 불러오지 못했습니다.</p>`);
 
 // news: 이미 받아 둔 /api/news 응답(Promise) — 1면이 쟁점 면과 한 번만 받아 나눠 쓴다. 시세 응답은 bw:quotes 이벤트로 알린다
@@ -23,10 +24,10 @@ export function brief(el, news0) {
     q.innerHTML = `<table class="mkt"><tbody>
       <tr><td>원/달러 <small>${esc(j.fx?.date || "")} 기준</small></td><td>${fx.KRW ? fx.KRW.toLocaleString("ko-KR", { maximumFractionDigits: 1 }) : "—"}</td></tr>
       <tr><td>엔/달러</td><td>${fx.JPY ? fx.JPY.toFixed(2) : "—"}</td></tr>
-      ${["KOSPI", "KOSDAQ"].map((s) => `<tr><td>${s}</td><td>${I[s] ? fmt(I[s].price, "X") : j.live ? "—" : '<span class="muted">키 필요</span>'}</td></tr>`).join("")}
+      ${["KOSPI", "KOSDAQ"].map((s) => `<tr><td>${s}</td><td>${I[s] ? fmt(I[s].price, "X") + chg(I[s]) : "—"}</td></tr>`).join("")}
     </tbody></table>
-    <table class="mkt wl"><thead><tr><td>관심종목</td><td>현재가</td></tr></thead><tbody>${w.map((s) => `<tr><td><button class="x" data-del="${esc(s)}" aria-label="${esc(s)} 삭제">×</button>${esc(s)}</td><td>${P[s] ? `${fmt(P[s].price, P[s].currency)} <small>${esc(P[s].currency || "")}</small>` : j.live ? "—" : '<span class="muted">키 필요</span>'}</td></tr>`).join("")}</tbody></table>
-    <p class="cap">${j.live ? `토스증권 현재가 · ${new Date(j.fetched_at).toLocaleTimeString("ko-KR")} 조회 · 30초 캐시` : '현재가는 <a href="#/connect">토스증권 키 등록</a> 후 표시됩니다. 환율은 ECB 일간 기준환율.'}${j.errors?.length ? ` · <span class="neg">${esc(j.errors.join(" / "))}</span>` : ""}</p>`;
+    <table class="mkt wl"><thead><tr><td>관심종목</td><td>현재가 · 등락</td></tr></thead><tbody>${w.map((s) => `<tr><td><button class="x" data-del="${esc(s)}" aria-label="${esc(s)} 삭제">×</button>${P[s]?.name ? `${esc(P[s].name)} <small>${esc(s)}</small>` : esc(s)}</td><td>${P[s] ? `${fmt(P[s].price, P[s].currency)} <small>${esc(P[s].currency || "")}</small>${chg(P[s])}` : "—"}</td></tr>`).join("")}</tbody></table>
+    <p class="cap">${j.live ? `${esc(j.source)} 현재가 · ${new Date(j.fetched_at).toLocaleTimeString("ko-KR")} 조회${/토스/.test(j.source) ? "" : " · 공개 시세라 지연될 수 있음"}` : "현재가를 불러오지 못했습니다."} · 환율은 ECB 일간 기준환율.${j.errors?.length ? `<br><span class="neg">${esc(j.errors.join(" / "))}</span>` : ""}</p>`;
     q.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => { save(load().filter((x) => x !== b.dataset.del)); quotes(); }));
     if (j.live && !el._timer) el._timer = setInterval(() => document.body.contains(el) ? quotes() : clearInterval(el._timer), 60000);
   };

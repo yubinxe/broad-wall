@@ -15,3 +15,5 @@
 - 일반 창 오류 대응: core.sanitize(저장 설정 정화) · 라우트 try/catch 오류면+설정 초기화(원장 보존) · boot.js 는 이 사이트 스크립트 오류만 표시(확장 프로그램 오류 무시) · js/css/index no-cache.
 - 1면 개편: 에세이 삭제 → 1면 쟁점/2면 경제·증시/3면 국제·지정학(js/topics.js 키워드 분류 + 판단 근거). /api/news?topic=all.
 - Toss 키: Vercel sensitive env(TOSS_CLIENT_ID/SECRET). 채팅 노출 → 재발급 권고.
+- 시세: 토스 우선 → 실패/미등록 시 공개 시세(api/_lib/public.js: 네이버 국내 종목·지수, Yahoo 차트 미국). 토스는 허용 IP 미등록으로 403(Vercel 유동 IP).
+- 쟁점 분류 실데이터 점검: vote/은행/달러 단독 오분류 제거, 호르무즈·대이란·푸틴·젤렌스키·rate rises 추가.

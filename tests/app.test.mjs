@@ -163,3 +163,24 @@ test("쟁점 분류: 키워드 일치·단어 경계·중복 제거·과거 사�
   assert.equal(T.analog(D, T.TOPICS.find((x) => x.id === "rates")), null);
   assert.equal(T.analog(D, T.TOPICS.find((x) => x.id === "oil")).rows.length, 4);
 });
+
+test("공개 시세 대체: 토스 차단 시 네이버(국내)·Yahoo(미국)로 채우고 출처 표기", async () => {
+  const { quotes } = await import("../api/quotes.js");
+  const calls = [], fake = async (u) => { calls.push(u);
+    if (u.includes("frankfurter")) return { ok: true, json: async () => ({ date: "2026-10-16", rates: { KRW: 1400 } }) };
+    if (u.includes("tossinvest")) return { ok: false, status: 403, json: async () => ({ error: "access_denied", error_description: "IP address not allowed" }) };
+    if (u.includes("domestic/stock/005930")) return { ok: true, json: async () => ({ datas: [{ itemCode: "005930", stockName: "삼성전자", closePrice: "215,000", fluctuationsRatio: "-0.23", localTradedAt: "2026-10-19T10:55:34+09:00" }] }) };
+    if (u.includes("domestic/index/")) return { ok: true, json: async () => ({ datas: [{ itemCode: "KOSPI", closePrice: "5,635.45", fluctuationsRatio: "-0.58" }, { itemCode: "KOSDAQ", closePrice: "1,100.10", fluctuationsRatio: "0.10" }] }) };
+    if (u.includes("yahoo.com/v8/finance/chart/AAPL")) return { ok: true, json: async () => ({ chart: { result: [{ meta: { currency: "USD", regularMarketPrice: 343.46, regularMarketChangePercent: 0.427, regularMarketTime: 1792180801 } }] } }) };
+    if (u.includes("yahoo.com")) return { ok: false, status: 404, json: async () => ({}) };
+    throw new Error("unexpected " + u); };
+  const B = await import("../api/_lib/brokers.js"); B._reset?.();
+  const o = await quotes({ TOSS_CLIENT_ID: "id", TOSS_CLIENT_SECRET: "secret-value-123" }, ["AAPL", "005930", "ZZZZ"], fake);
+  assert.equal(o.live, true); assert.match(o.source, /네이버/); assert.match(o.source, /Yahoo/);
+  const P = Object.fromEntries(o.prices.map((p) => [p.symbol, p]));
+  assert.equal(P["005930"].price, 215000); assert.ok(Math.abs(P["005930"].chg + 0.0023) < 1e-12); assert.equal(P["005930"].currency, "KRW");
+  assert.equal(P.AAPL.price, 343.46); assert.ok(Math.abs(P.AAPL.chg - 0.00427) < 1e-12); assert.equal(P.ZZZZ, undefined);
+  assert.deepEqual(o.indicators.map((i) => [i.symbol, i.price]), [["KOSPI", 5635.45], ["KOSDAQ", 1100.1]]);
+  assert.ok(o.errors.some((e) => /허용되지 않은 IP/.test(e)), "토스 차단 사유 표시"); assert.ok(o.errors.some((e) => /ZZZZ/.test(e)));
+  assert.ok(!JSON.stringify(o).includes("secret-value-123"), "키 노출 없음");
+});

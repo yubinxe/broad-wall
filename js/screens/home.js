@@ -44,7 +44,7 @@ export function lobby(el) {
   const live = (n) => { // 시세 응답이 오면 환율·관심종목 칸을 채운다
     if (!quotes) return; const k = n.dataset.live;
     if (k === "fx") { const r = quotes.fx?.rates || {}; n.innerHTML = r.KRW ? `원/달러 <b>${r.KRW.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}</b> · 엔/달러 <b>${r.JPY?.toFixed(2) ?? "—"}</b> <small>(ECB ${esc(quotes.fx.date || "")})</small>` : "환율 응답 없음"; }
-    if (k === "wl") { const ps = (quotes.prices || []).slice(0, 5); n.innerHTML = ps.length ? ps.map((p) => `${esc(p.symbol)} <b>${Number(p.price).toLocaleString("en-US", { maximumFractionDigits: 2 })}</b>`).join(" · ") : quotes.live ? "관심종목 시세 없음" : '관심종목 현재가는 <a href="#/connect">토스증권 연결</a> 후 표시'; }
+    if (k === "wl") { const ps = (quotes.prices || []).slice(0, 5); n.innerHTML = ps.length ? `<b>관심종목 오늘</b> — ` + ps.map((p) => `${esc(p.name || p.symbol)} <b class="${p.chg == null ? "" : p.chg >= 0 ? "pos" : "neg"}">${p.chg == null ? Number(p.price).toLocaleString("en-US", { maximumFractionDigits: 2 }) : (p.chg >= 0 ? "+" : "") + (p.chg * 100).toFixed(1) + "%"}</b>`).join(" · ") : "관심종목 시세를 불러오지 못했습니다"; }
   };
   const S = (r) => (r == null ? "—" : C.pct(r));
   const insight = (tp) => { // 쟁점별 판단 근거 — 수치는 모두 사이트 자료에서 계산
